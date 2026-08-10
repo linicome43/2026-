@@ -457,3 +457,116 @@ function uploadFile(){
 }
 async function deleteFile(idx){if(!confirm('이 파일을 삭제하시겠습니까?'))return;const ok=await sheetsDelete('files',idx+1);if(ok){state.files.splice(idx,1);showToast('삭제됨');renderFiles()}}
 </script>
+
+<script>
+// MEETINGS
+function renderMeetings(){
+  if(state.meetings.length===0){document.getElementById('meetingsList').innerHTML='<div class="empty-state"><div class="icon">📝</div><p>회의록 없음</p></div>';return}
+  document.getElementById('meetingsList').innerHTML=state.meetings.map((m,i)=>{
+    const contentId=`mc-${m.id}`;
+    return`<div class="meeting-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="meeting-date">${m.date}<span class="meeting-day">${getDayName(m.date)}</span></div><div class="meeting-title">${esc(m.title)}</div>${m.attendees?`<div class="meeting-attendees">참석: ${esc(m.attendees)}</div>`:''}</div><div class="meeting-actions"><button class="btn btn-secondary btn-sm" onclick="editMeeting(${i})">수정</button><button class="btn btn-danger btn-sm" onclick="deleteMeeting(${i})">삭제</button></div></div><div class="meeting-content" id="${contentId}">${esc(m.content)}</div><div class="meeting-expand" id="exp-${contentId}" onclick="toggleMeeting('${contentId}')">더 보기 ▼</div></div>`}).join('');
+  // Check overflow
+  setTimeout(()=>{state.meetings.forEach(m=>{const el=document.getElementById(`mc-${m.id}`);const exp=document.getElementById(`exp-mc-${m.id}`);if(el&&el.scrollHeight>80&&exp)exp.style.display='block'})},50);
+}
+function toggleMeeting(id){const el=document.getElementById(id);const exp=document.getElementById('exp-'+id);if(el.classList.contains('expanded')){el.classList.remove('expanded');exp.textContent='더 보기 ▼'}else{el.classList.add('expanded');exp.textContent='접기 ▲'}}
+function openMeetingModal(editIdx){
+  const isEdit=editIdx!==undefined;const m=isEdit?state.meetings[editIdx]:null;
+  document.getElementById('meetingEditId').value=isEdit?editIdx:'';
+  document.getElementById('meetingModalTitle').textContent=isEdit?'회의록 수정':'새 회의록';
+  document.getElementById('meetingDate').value=m?m.date:new Date().toISOString().split('T')[0];
+  document.getElementById('meetingTitle').value=m?m.title:'';
+  document.getElementById('meetingContent').value=m?m.content:'';
+  const checked=m?m.attendees.split(',').map(s=>s.trim()):[];
+  document.getElementById('meetingAttendees').innerHTML=state.team.map(t=>`<label><input type="checkbox" value="${esc(t.name)}" ${checked.includes(t.name)?'checked':''}> ${esc(t.name)}</label>`).join('');
+  openModal('meetingModal');
+}
+function editMeeting(i){openMeetingModal(i)}
+async function saveMeeting(){
+  const editIdx=document.getElementById('meetingEditId').value;
+  const date=document.getElementById('meetingDate').value;
+  const title=document.getElementById('meetingTitle').value.trim();
+  const content=document.getElementById('meetingContent').value.trim();
+  const attendees=Array.from(document.querySelectorAll('#meetingAttendees input:checked')).map(c=>c.value).join(', ');
+  if(!title){showToast('제목 입력');return}
+  if(editIdx!==''){
+    const i=+editIdx;const m=state.meetings[i];m.date=date;m.title=title;m.content=content;m.attendees=attendees;
+    // Find actual row in sheet (meetings sorted differently)
+    const allRows=await sheetsGet('meetings!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===m.id);
+    if(rowIdx>=0){await sheetsUpdate(`meetings!A${rowIdx+2}:G${rowIdx+2}`,[[m.id,date,title,content,m.author,m.createdAt,attendees]]);showToast('회의록 수정됨')}
+    renderMeetings();renderDashboard();closeModal('meetingModal');return;
+  }
+  const id=Date.now().toString(),author=state.user.name,createdAt=new Date().toISOString();
+  const ok=await sheetsAppend('meetings!A:G',[[id,date,title,content,author,createdAt,attendees]]);
+  if(ok){state.meetings.unshift({id,date,title,content,author,createdAt,attendees});showToast('회의록 저장됨');renderMeetings();renderDashboard()}
+  closeModal('meetingModal');
+}
+async function deleteMeeting(i){if(!confirm('이 회의록을 삭제하시겠습니까?'))return;
+  const m=state.meetings[i];const allRows=await sheetsGet('meetings!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===m.id);
+  if(rowIdx>=0){const ok=await sheetsDelete('meetings',rowIdx+1);if(ok){state.meetings.splice(i,1);showToast('삭제됨');renderMeetings();renderDashboard()}}}
+
+// BUDGET
+function renderBudget(){
+  const total=1000000,used=state.budget.reduce((s,b)=>s+b.amount,0),rem=total-used,pct=Math.min(used/total*100,100);
+  document.getElementById('budgetTotalDisplay').textContent=`₩${used.toLocaleString()} / ₩${total.toLocaleString()}`;
+  document.getElementById('budgetRemaining').textContent=`잔여: ₩${rem.toLocaleString()}`;
+  document.getElementById('budgetProgressBar').style.width=pct+'%';
+  document.getElementById('budgetProgressBar').style.background=pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--accent)';
+  let list=state.budget;if(state.budgetCategoryFilter!=='all')list=list.filter(b=>b.category===state.budgetCategoryFilter);
+  if(list.length===0){document.getElementById('budgetTable').innerHTML='';document.getElementById('budgetEmpty').style.display='block';return}
+  document.getElementById('budgetEmpty').style.display='none';
+  document.getElementById('budgetTable').innerHTML=list.map((b,i)=>{
+    const realIdx=state.budget.indexOf(b);
+    const statusCls=b.status==='지급완료'?'badge-done':b.status==='예산신청'?'badge-progress':'badge-pending';
+    return`<tr><td>${b.date}</td><td>${esc(b.category)}</td><td>${esc(b.item)}</td><td style="font-weight:600">₩${b.amount.toLocaleString()}</td><td><span class="badge ${statusCls}">${esc(b.status)}</span></td><td>${esc(b.createdBy)}</td><td>${b.receiptUrl?`<a href="${b.receiptUrl}" target="_blank" class="btn btn-secondary btn-sm">📎</a> <a href="https://drive.google.com/uc?export=download&id=${b.receiptId}" class="btn btn-primary btn-sm">⬇</a>`:'-'}</td><td><button class="btn btn-secondary btn-sm" onclick="editBudget(${realIdx})">수정</button> <button class="btn btn-danger btn-sm" onclick="deleteBudget(${realIdx})">삭제</button></td></tr>`}).join('');
+}
+function openBudgetModal(editIdx){
+  const isEdit=editIdx!==undefined;const b=isEdit?state.budget[editIdx]:null;
+  document.getElementById('budgetEditId').value=isEdit?editIdx:'';
+  document.getElementById('budgetModalTitle').textContent=isEdit?'지출 수정':'지출 등록';
+  document.getElementById('budgetDate').value=b?b.date:new Date().toISOString().split('T')[0];
+  document.getElementById('budgetCategoryInput').value=b?b.category:(state.categories[0]||'');
+  document.getElementById('budgetItem').value=b?b.item:'';
+  document.getElementById('budgetAmount').value=b?b.amount:'';
+  document.getElementById('budgetStatus').value=b?b.status:'지출예정';
+  document.getElementById('budgetCreatedBy').value=b?b.createdBy:(state.user?state.user.name:'');
+  document.getElementById('budgetNote').value=b?b.note:'';
+  document.getElementById('budgetReceiptId').value=b?b.receiptId:'';
+  document.getElementById('budgetReceiptUrl').value=b?b.receiptUrl:'';
+  document.getElementById('receiptFileName').textContent=b&&b.receiptId?'영수증 첨부됨':'';
+  openModal('budgetModal');
+}
+function editBudget(i){openBudgetModal(i)}
+async function saveBudget(){
+  const editIdx=document.getElementById('budgetEditId').value;
+  const date=document.getElementById('budgetDate').value;
+  const category=document.getElementById('budgetCategoryInput').value;
+  const item=document.getElementById('budgetItem').value.trim();
+  const amount=parseInt(document.getElementById('budgetAmount').value)||0;
+  const status=document.getElementById('budgetStatus').value;
+  const createdBy=document.getElementById('budgetCreatedBy').value.trim();
+  const note=document.getElementById('budgetNote').value.trim();
+  const receiptId=document.getElementById('budgetReceiptId').value;
+  const receiptUrl=document.getElementById('budgetReceiptUrl').value;
+  if(!item||amount<=0){showToast('항목과 금액을 입력하세요');return}
+  if(editIdx!==''){
+    const i=+editIdx;state.budget[i]={...state.budget[i],date,category,item,amount,status,createdBy,note,receiptId,receiptUrl};
+    const ok=await sheetsUpdate(`budget!A${i+2}:J${i+2}`,[[state.budget[i].id,category,item,amount.toString(),date,note,createdBy,status,receiptId,receiptUrl]]);
+    if(ok){showToast('수정됨');renderBudget();renderDashboard()}closeModal('budgetModal');return;
+  }
+  const id=Date.now().toString();
+  const ok=await sheetsAppend('budget!A:J',[[id,category,item,amount.toString(),date,note,createdBy,status,receiptId,receiptUrl]]);
+  if(ok){state.budget.push({id,category,item,amount,date,note,createdBy,status,receiptId,receiptUrl});showToast('지출 등록됨');renderBudget();renderDashboard()}
+  closeModal('budgetModal');
+}
+async function deleteBudget(i){if(!confirm('삭제하시겠습니까?'))return;const ok=await sheetsDelete('budget',i+1);if(ok){state.budget.splice(i,1);showToast('삭제됨');renderBudget();renderDashboard()}}
+function uploadReceipt(){
+  const input=document.createElement('input');input.type='file';
+  input.onchange=async e=>{const file=e.target.files[0];if(!file)return;showToast('영수증 업로드 중...');
+    try{const meta={name:'[영수증]'+file.name,parents:[CONFIG.DRIVE_FOLDER_ID]};const form=new FormData();form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));form.append('file',file);
+    const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{Authorization:`Bearer ${state.accessToken}`},body:form});
+    if(!resp.ok)throw new Error();const r=await resp.json();
+    document.getElementById('budgetReceiptId').value=r.id;
+    document.getElementById('budgetReceiptUrl').value=r.webViewLink||`https://drive.google.com/file/d/${r.id}/view`;
+    document.getElementById('receiptFileName').textContent=file.name;showToast('영수증 첨부됨')}catch(err){showToast('영수증 업로드 실패')}};input.click();
+}
+</script>
