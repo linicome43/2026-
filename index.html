@@ -456,6 +456,12 @@ function renderProjects(){
 }
 function filterProjects(f){state.projectFilter=f;document.querySelectorAll('.filter-bar .btn[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));renderProjects()}
 function openNewProjectInCategory(cat){openProjectModal(null,cat)}
+async function deleteProject(id){
+  if(!confirm('이 프로젝트를 삭제하시겠습니까?'))return;
+  const idx=state.projects.findIndex(p=>p.id===id);if(idx===-1)return;
+  const ok=await sheetsDelete('projects',idx+1);
+  if(ok){state.projects.splice(idx,1);showToast('프로젝트 삭제됨');renderAll()}
+}
 function openProjectDetail(id){
   const p=state.projects.find(x=>x.id===id);if(!p)return;
   document.getElementById('projectDetailTitle').textContent=p.name;
