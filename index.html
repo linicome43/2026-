@@ -570,3 +570,21 @@ function uploadReceipt(){
     document.getElementById('receiptFileName').textContent=file.name;showToast('영수증 첨부됨')}catch(err){showToast('영수증 업로드 실패')}};input.click();
 }
 </script>
+
+<script>
+// UTILITIES
+function statusLabel(s){return{todo:'할 일',progress:'진행 중',done:'완료',pending:'보류'}[s]||s}
+function fileIcon(n){const e=(n||'').split('.').pop().toLowerCase();const m={pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📽️',pptx:'📽️',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',gif:'🖼️',svg:'🖼️',psd:'🎨',ai:'🎨',fig:'🎨',zip:'📦',rar:'📦',mp4:'🎬',mov:'🎬'};return m[e]||'📁'}
+function fmtDate(d){if(!d)return'';try{return new Date(d).toLocaleDateString('ko-KR',{year:'numeric',month:'short',day:'numeric'})}catch{return d}}
+function getDayName(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('ko-KR',{weekday:'short'})}catch{return''}}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('active')}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active'))});
+window.addEventListener('load',()=>{if(typeof gapi!=='undefined')gapiLoaded();if(typeof google!=='undefined'&&google.accounts)gisLoaded();updateDday()});
+setInterval(()=>{if(state.accessToken&&state.tokenClient)state.tokenClient.requestAccessToken({prompt:''})},50*60*1000);
+</script>
+</body>
+</html>
