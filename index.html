@@ -538,16 +538,22 @@ async function saveProject(){
 function renderFiles(){
   let list=state.files;if(state.fileCategoryFilter!=='all')list=list.filter(f=>f.category===state.fileCategoryFilter);
   if(list.length===0){document.getElementById('filesList').innerHTML='<div class="empty-state"><div class="icon">📎</div><p>파일 없음</p></div>';return}
-  document.getElementById('filesList').innerHTML=list.map((f,i)=>`<div class="file-item"><div class="file-info"><span class="file-icon">${fileIcon(f.name)}</span><div style="min-width:0"><div style="font-size:.88rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</div><div style="font-size:.75rem;color:var(--text-secondary)">${f.category?f.category+' · ':''}${esc(f.uploadedBy)} · ${fmtDate(f.uploadedAt)}</div></div></div><div class="file-btns"><a href="${f.url}" target="_blank" class="btn btn-secondary btn-sm">열기</a><a href="https://drive.google.com/uc?export=download&id=${f.driveId}" class="btn btn-primary btn-sm">⬇</a><button class="btn btn-danger btn-sm" onclick="deleteFile(${state.files.indexOf(f)})">✕</button></div></div>`).join('');
+  document.getElementById('filesList').innerHTML=list.map((f,i)=>{
+    const desc=f.description||f.name;const author=f.author||f.uploadedBy;
+    return`<div class="file-item"><div class="file-info"><span class="file-icon">${fileIcon(f.name)}</span><div style="min-width:0"><div style="font-size:.9rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(desc)}</div><div style="font-size:.75rem;color:var(--text-secondary)">${esc(f.name)}${f.category?' · '+f.category:''}</div><div style="font-size:.75rem;color:var(--text-secondary)">👤 ${esc(author)} · ${fmtDate(f.uploadedAt)}</div></div></div><div class="file-btns"><a href="${f.url}" target="_blank" class="btn btn-secondary btn-sm">열기</a><a href="https://drive.google.com/uc?export=download&id=${f.driveId}" class="btn btn-primary btn-sm">⬇</a><button class="btn btn-danger btn-sm" onclick="deleteFile(${state.files.indexOf(f)})">✕</button></div></div>`}).join('');
 }
 function uploadFile(){
-  const cat=document.getElementById('fileCategory').value;const input=document.createElement('input');input.type='file';
+  const cat=document.getElementById('fileCategory').value;
+  const description=document.getElementById('fileDescription').value.trim();
+  const author=document.getElementById('fileAuthor').value.trim()||state.user.name;
+  const input=document.createElement('input');input.type='file';
   input.onchange=async e=>{const file=e.target.files[0];if(!file)return;showToast('업로드 중...');
     try{const meta={name:file.name,parents:[CONFIG.DRIVE_FOLDER_ID]};const form=new FormData();form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));form.append('file',file);
     const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{Authorization:`Bearer ${state.accessToken}`},body:form});
     if(!resp.ok)throw new Error('fail');const r=await resp.json();const id=Date.now().toString(),url=r.webViewLink||`https://drive.google.com/file/d/${r.id}/view`;
-    await sheetsAppend('files!A:G',[[id,r.name,r.id,url,state.user.name,new Date().toISOString(),cat]]);
-    state.files.push({id,name:r.name,driveId:r.id,url,uploadedBy:state.user.name,uploadedAt:new Date().toISOString(),category:cat});
+    await sheetsAppend('files!A:I',[[id,r.name,r.id,url,state.user.name,new Date().toISOString(),cat,description,author]]);
+    state.files.push({id,name:r.name,driveId:r.id,url,uploadedBy:state.user.name,uploadedAt:new Date().toISOString(),category:cat,description,author});
+    document.getElementById('fileDescription').value='';document.getElementById('fileAuthor').value='';
     showToast('업로드 완료!');renderFiles()}catch(err){console.error(err);showToast('업로드 실패')}};input.click();
 }
 async function deleteFile(idx){if(!confirm('이 파일을 삭제하시겠습니까?'))return;const ok=await sheetsDelete('files',idx+1);if(ok){state.files.splice(idx,1);showToast('삭제됨');renderFiles()}}
