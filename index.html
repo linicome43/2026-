@@ -336,7 +336,7 @@ async function loadCategories(){const rows=await sheetsGet('categories!A2:A');if
 async function loadProjects(){const rows=await sheetsGet('projects!A2:I');if(rows.length===0){state.projects=[...state.defaultProjects];await sheetsAppend('projects!A:I',state.defaultProjects.map(p=>[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category,p.progressDate,p.progressLog]))}else{state.projects=rows.map(r=>({id:r[0]||'',name:r[1]||'',status:r[2]||'todo',assignee:r[3]||'',deadline:r[4]||'',notes:r[5]||'',category:r[6]||'',progressDate:r[7]||'',progressLog:r[8]||''}))}}
 async function loadMeetings(){const rows=await sheetsGet('meetings!A2:G');state.meetings=rows.map(r=>({id:r[0]||'',date:r[1]||'',title:r[2]||'',content:r[3]||'',author:r[4]||'',createdAt:r[5]||'',attendees:r[6]||''})).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
 async function loadBudget(){const rows=await sheetsGet('budget!A2:J');state.budget=rows.map(r=>({id:r[0]||'',category:r[1]||'',item:r[2]||'',amount:parseInt(r[3])||0,date:r[4]||'',note:r[5]||'',createdBy:r[6]||'',status:r[7]||'지출예정',receiptId:r[8]||'',receiptUrl:r[9]||''}))}
-async function loadFiles(){const rows=await sheetsGet('files!A2:G');state.files=rows.map(r=>({id:r[0]||'',name:r[1]||'',driveId:r[2]||'',url:r[3]||'',uploadedBy:r[4]||'',uploadedAt:r[5]||'',category:r[6]||''}))}
+async function loadFiles(){const rows=await sheetsGet('files!A2:I');state.files=rows.map(r=>({id:r[0]||'',name:r[1]||'',driveId:r[2]||'',url:r[3]||'',uploadedBy:r[4]||'',uploadedAt:r[5]||'',category:r[6]||'',description:r[7]||'',author:r[8]||''}))}
 function renderAll(){renderDashboard();renderTeam();renderCategoryFilters();renderProjects();renderFiles();renderMeetings();renderBudget()}
 
 // CATEGORIES
