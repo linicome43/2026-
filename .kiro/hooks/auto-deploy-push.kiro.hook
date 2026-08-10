@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "자동 배포 (Git Push)",
+  "description": "index.html이 수정되면 자동으로 git commit & push하여 GitHub Pages에 배포합니다.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.html"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd /Users/lini/Desktop/kiro_sl/notion1 && git add -A && git commit -m \"update: 페이지 수정\" && git push -u origin main"
+  }
+}
