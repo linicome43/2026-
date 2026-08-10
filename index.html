@@ -673,8 +673,9 @@ async function initializeGapiClient() {
   try {
     await gapi.client.init({ apiKey: CONFIG.API_KEY, discoveryDocs: CONFIG.DISCOVERY_DOCS });
     state.gapiInited = true;
+    console.log('GAPI initialized');
     maybeEnableButtons();
-  } catch(err) { console.error('GAPI init error:', err); }
+  } catch(err) { console.error('GAPI init error:', err); showToast('API 초기화 실패: ' + (err.message || err.error || 'unknown')); }
 }
 
 function gisLoaded() {
@@ -684,25 +685,43 @@ function gisLoaded() {
     callback: handleTokenResponse,
   });
   state.gisInited = true;
+  console.log('GIS initialized');
   maybeEnableButtons();
 }
 
 function maybeEnableButtons() {
   if (state.gapiInited && state.gisInited) {
-    const stored = sessionStorage.getItem('user_info');
-    if (stored) { state.user = JSON.parse(stored); state.tokenClient.requestAccessToken({ prompt:'' }); }
+    const stored = localStorage.getItem('user_info');
+    if (stored) {
+      state.user = JSON.parse(stored);
+      // Silent token request (no popup)
+      state.tokenClient.requestAccessToken({ prompt: '' });
+    }
   }
 }
 
 function handleTokenResponse(resp) {
-  if (resp.error) { console.error('Token error:', resp); return; }
+  if (resp.error) {
+    console.error('Token error:', resp);
+    // If silent failed, user needs to login again
+    if (resp.error === 'interaction_required' || resp.error === 'consent_required') {
+      localStorage.removeItem('user_info');
+      state.user = null;
+    }
+    return;
+  }
   state.accessToken = resp.access_token;
+  console.log('Token acquired');
+  
+  // Set token on gapi client
+  gapi.client.setToken({ access_token: resp.access_token });
+
   if (!state.user) {
     fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { Authorization: `Bearer ${resp.access_token}` }
     }).then(r=>r.json()).then(info => {
       state.user = { name:info.name, email:info.email, picture:info.picture };
-      sessionStorage.setItem('user_info', JSON.stringify(state.user));
+      localStorage.setItem('user_info', JSON.stringify(state.user));
       showApp();
     });
   } else { showApp(); }
