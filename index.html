@@ -163,10 +163,14 @@ tr:hover td{background:var(--bg)}
     <div class="page" id="page-files">
       <h2 class="page-title">파일 업로드</h2>
       <div class="card">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <select class="form-control" id="fileCategory" style="width:auto;"><option value="">카테고리 선택</option></select>
-          <button class="btn btn-primary" onclick="uploadFile()">📁 파일 선택 & 업로드</button>
         </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <input type="text" class="form-control" id="fileDescription" placeholder="파일 설명 (예: 포스터 1차 시안)" style="flex:1;min-width:200px">
+          <input type="text" class="form-control" id="fileAuthor" placeholder="작성자" style="width:120px">
+        </div>
+        <button class="btn btn-primary" onclick="uploadFile()">📁 파일 선택 & 업로드</button>
       </div>
       <div class="filter-bar" id="fileCategoryFilter"></div>
       <div class="card" style="margin-top:8px"><div class="card-header"><h3 class="card-title">업로드된 파일</h3><button class="btn btn-secondary btn-sm" onclick="loadFiles()">새로고침</button></div><div id="filesList"></div></div>
