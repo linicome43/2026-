@@ -832,13 +832,23 @@ async function sheetsUpdate(range, values) {
 // DATA LOADING
 // ═══════════════════════════════════════════════════════
 async function loadAllData() {
-  // Load team from localStorage (persists across sessions without sheets)
-  const savedTeam = localStorage.getItem('team_data');
-  if (savedTeam) state.team = JSON.parse(savedTeam);
-
-  await Promise.all([loadProjects(), loadMeetings(), loadBudget(), loadFiles()]);
+  await Promise.all([loadTeam(), loadProjects(), loadMeetings(), loadBudget(), loadFiles()]);
   renderDashboard();
   renderTeam();
+}
+
+async function loadTeam() {
+  const rows = await sheetsGet('team!A2:C');
+  if (rows.length === 0) {
+    // 초기 데이터 시트에 저장
+    const values = state.team.map(m => [m.name, m.dept, m.role]);
+    await sheetsUpdate('team!A1:C1', [['name', 'dept', 'role']]);
+    await sheetsAppend('team!A:C', values);
+  } else {
+    state.team = rows.map(row => ({
+      name: row[0] || '', dept: row[1] || '', role: row[2] || ''
+    }));
+  }
 }
 
 async function loadProjects() {
@@ -944,15 +954,18 @@ function openAddMemberModal() {
   openModal('addMemberModal');
 }
 
-function addMember() {
+async function addMember() {
   const name = document.getElementById('newMemberName').value.trim();
   const dept = document.getElementById('newMemberDept').value.trim();
   const role = document.getElementById('newMemberRole').value.trim();
   if (!name) { showToast('이름을 입력해주세요'); return; }
-  state.team.push({ name, dept, role });
-  localStorage.setItem('team_data', JSON.stringify(state.team));
-  showToast(`${name} 님이 추가되었습니다`);
-  renderTeam();
+  
+  const ok = await sheetsAppend('team!A:C', [[name, dept, role]]);
+  if (ok) {
+    state.team.push({ name, dept, role });
+    showToast(`${name} 님이 추가되었습니다`);
+    renderTeam();
+  }
   closeModal('addMemberModal');
 }
 
@@ -965,13 +978,20 @@ function openEditMember(idx) {
   openModal('editMemberModal');
 }
 
-function saveEditMember() {
+async function saveEditMember() {
   const idx = parseInt(document.getElementById('editMemberIdx').value);
-  state.team[idx].dept = document.getElementById('editMemberDept').value.trim();
-  state.team[idx].role = document.getElementById('editMemberRole').value.trim();
-  localStorage.setItem('team_data', JSON.stringify(state.team));
-  showToast('역할이 수정되었습니다');
-  renderTeam();
+  const dept = document.getElementById('editMemberDept').value.trim();
+  const role = document.getElementById('editMemberRole').value.trim();
+  
+  state.team[idx].dept = dept;
+  state.team[idx].role = role;
+  
+  const rowNum = idx + 2;
+  const ok = await sheetsUpdate(`team!A${rowNum}:C${rowNum}`, [[state.team[idx].name, dept, role]]);
+  if (ok) {
+    showToast('역할이 수정되었습니다');
+    renderTeam();
+  }
   closeModal('editMemberModal');
 }
 
