@@ -370,3 +370,90 @@ async function addMember(){const n=document.getElementById('newMemberName').valu
 function openEditMember(i){const m=state.team[i];document.getElementById('editMemberIdx').value=i;document.getElementById('editMemberName').value=m.name;document.getElementById('editMemberDept').value=m.dept;document.getElementById('editMemberRole').value=m.role;openModal('editMemberModal')}
 async function saveEditMember(){const i=+document.getElementById('editMemberIdx').value,d=document.getElementById('editMemberDept').value.trim(),r=document.getElementById('editMemberRole').value.trim();state.team[i].dept=d;state.team[i].role=r;const ok=await sheetsUpdate(`team!A${i+2}:C${i+2}`,[[state.team[i].name,d,r]]);if(ok){showToast('수정됨');renderTeam()}closeModal('editMemberModal')}
 </script>
+
+<script>
+// PROJECTS
+function renderProjects(){
+  let list=state.projects;
+  if(state.projectFilter!=='all')list=list.filter(p=>p.status===state.projectFilter);
+  if(state.categoryFilter!=='all')list=list.filter(p=>p.category===state.categoryFilter);
+  if(list.length===0){document.getElementById('projectsList').innerHTML='<div class="empty-state"><div class="icon">📋</div><p>프로젝트가 없습니다</p></div>';return}
+  // Group by category
+  const grouped={};list.forEach(p=>{const c=p.category||'기타';if(!grouped[c])grouped[c]=[];grouped[c].push(p)});
+  let html='';
+  for(const cat of Object.keys(grouped)){
+    html+=`<div class="category-section"><div class="category-title"><span>📁 ${esc(cat)}</span><button class="btn btn-sm btn-secondary" onclick="openNewProjectInCategory('${esc(cat)}')">+ 추가</button></div>`;
+    html+=grouped[cat].map(p=>`<div class="card project-card" onclick="openProjectDetail('${p.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><strong style="font-size:.92rem">${esc(p.name)}</strong><span class="badge badge-${p.status}">${statusLabel(p.status)}</span></div><div style="font-size:.8rem;color:var(--text-secondary)">${p.assignee?'👤 '+esc(p.assignee):'담당자 미지정'}${p.deadline?' · 📅 '+p.deadline:''}</div>${p.notes?`<div style="font-size:.8rem;color:var(--text-secondary);margin-top:3px">${esc(p.notes).substring(0,60)}${p.notes.length>60?'...':''}</div>`:''}</div><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openProjectModal('${p.id}')">수정</button></div></div>`).join('');
+    html+=`</div>`;
+  }
+  document.getElementById('projectsList').innerHTML=html;
+}
+function filterProjects(f){state.projectFilter=f;document.querySelectorAll('.filter-bar .btn[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));renderProjects()}
+function openNewProjectInCategory(cat){openProjectModal(null,cat)}
+function openProjectDetail(id){
+  const p=state.projects.find(x=>x.id===id);if(!p)return;
+  document.getElementById('projectDetailTitle').textContent=p.name;
+  let logHtml=p.progressLog?p.progressLog.split('\n').map(l=>`<div style="font-size:.83rem;padding:4px 0;border-bottom:1px solid var(--border)">${esc(l)}</div>`).join(''):'<span style="color:var(--text-secondary);font-size:.85rem">기록 없음</span>';
+  document.getElementById('projectDetailContent').innerHTML=`
+    <span class="badge badge-${p.status}" style="font-size:.85rem;padding:5px 14px">${statusLabel(p.status)}</span>
+    <table style="font-size:.88rem;margin-top:12px"><tr><td style="font-weight:600;width:90px;padding:6px 10px 6px 0">카테고리</td><td>${esc(p.category)||'-'}</td></tr><tr><td style="font-weight:600;padding:6px 10px 6px 0">담당자</td><td>${esc(p.assignee)||'미지정'}</td></tr><tr><td style="font-weight:600;padding:6px 10px 6px 0">마감일</td><td>${p.deadline||'미정'}</td></tr><tr><td style="font-weight:600;padding:6px 10px 6px 0">상세내용</td><td style="white-space:pre-wrap">${esc(p.notes)||'-'}</td></tr><tr><td style="font-weight:600;padding:6px 10px 6px 0">진행일자</td><td>${p.progressDate||'-'}</td></tr></table>
+    <div style="margin-top:12px"><strong style="font-size:.88rem">📋 진행상황 기록</strong><div style="margin-top:6px;padding:10px;background:var(--bg);border-radius:6px;max-height:200px;overflow-y:auto">${logHtml}</div></div>`;
+  document.getElementById('projectDetailEditBtn').onclick=()=>{closeModal('projectDetailModal');openProjectModal(id)};
+  openModal('projectDetailModal');
+}
+function openProjectModal(id,defaultCat){
+  const isNew=!id;const p=isNew?null:state.projects.find(x=>x.id===id);
+  document.getElementById('projectEditId').value=id||'';
+  document.getElementById('projectModalTitle').textContent=isNew?'새 프로젝트 추가':(p.name+' 수정');
+  document.getElementById('projectNameGroup').style.display=isNew?'block':'none';
+  document.getElementById('projectName').value='';
+  document.getElementById('projectCategorySelect').value=p?p.category:(defaultCat||state.categories[0]||'');
+  document.getElementById('projectStatus').value=p?p.status:'todo';
+  document.getElementById('projectDeadline').value=p?p.deadline:'';
+  document.getElementById('projectNotes').value=p?p.notes:'';
+  document.getElementById('projectProgressDate').value=p?p.progressDate:new Date().toISOString().split('T')[0];
+  document.getElementById('projectProgressLog').value='';
+  const assignees=p?p.assignee.split(',').map(s=>s.trim()):[];
+  document.getElementById('projectAssigneeCheckboxes').innerHTML=state.team.map(m=>`<label><input type="checkbox" value="${esc(m.name)}" ${assignees.includes(m.name)?'checked':''}> ${esc(m.name)}</label>`).join('');
+  openModal('projectModal');
+}
+function openNewProjectModal(){openProjectModal(null)}
+async function saveProject(){
+  const id=document.getElementById('projectEditId').value;
+  const assignee=Array.from(document.querySelectorAll('#projectAssigneeCheckboxes input:checked')).map(c=>c.value).join(', ');
+  const newLog=document.getElementById('projectProgressLog').value.trim();
+  const progressDate=document.getElementById('projectProgressDate').value;
+  if(!id){
+    const name=document.getElementById('projectName').value.trim();if(!name){showToast('이름 입력');return}
+    const np={id:Date.now().toString(),name,status:document.getElementById('projectStatus').value,assignee,deadline:document.getElementById('projectDeadline').value,notes:document.getElementById('projectNotes').value,category:document.getElementById('projectCategorySelect').value,progressDate,progressLog:newLog?`[${progressDate}] ${newLog}`:''};
+    const ok=await sheetsAppend('projects!A:I',[[np.id,np.name,np.status,np.assignee,np.deadline,np.notes,np.category,np.progressDate,np.progressLog]]);
+    if(ok){state.projects.push(np);showToast('프로젝트 추가됨');renderAll()}closeModal('projectModal');return;
+  }
+  const idx=state.projects.findIndex(x=>x.id===id);if(idx===-1)return;
+  const p=state.projects[idx];
+  p.status=document.getElementById('projectStatus').value;p.assignee=assignee;
+  p.deadline=document.getElementById('projectDeadline').value;p.notes=document.getElementById('projectNotes').value;
+  p.category=document.getElementById('projectCategorySelect').value;p.progressDate=progressDate;
+  if(newLog)p.progressLog=(p.progressLog?p.progressLog+'\n':'')+`[${progressDate}] ${newLog}`;
+  const ok=await sheetsUpdate(`projects!A${idx+2}:I${idx+2}`,[[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category,p.progressDate,p.progressLog]]);
+  if(ok){showToast('프로젝트 업데이트됨');renderAll()}closeModal('projectModal');
+}
+
+// FILES
+function renderFiles(){
+  let list=state.files;if(state.fileCategoryFilter!=='all')list=list.filter(f=>f.category===state.fileCategoryFilter);
+  if(list.length===0){document.getElementById('filesList').innerHTML='<div class="empty-state"><div class="icon">📎</div><p>파일 없음</p></div>';return}
+  document.getElementById('filesList').innerHTML=list.map((f,i)=>`<div class="file-item"><div class="file-info"><span class="file-icon">${fileIcon(f.name)}</span><div style="min-width:0"><div style="font-size:.88rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</div><div style="font-size:.75rem;color:var(--text-secondary)">${f.category?f.category+' · ':''}${esc(f.uploadedBy)} · ${fmtDate(f.uploadedAt)}</div></div></div><div class="file-btns"><a href="${f.url}" target="_blank" class="btn btn-secondary btn-sm">열기</a><a href="https://drive.google.com/uc?export=download&id=${f.driveId}" class="btn btn-primary btn-sm">⬇</a><button class="btn btn-danger btn-sm" onclick="deleteFile(${state.files.indexOf(f)})">✕</button></div></div>`).join('');
+}
+function uploadFile(){
+  const cat=document.getElementById('fileCategory').value;const input=document.createElement('input');input.type='file';
+  input.onchange=async e=>{const file=e.target.files[0];if(!file)return;showToast('업로드 중...');
+    try{const meta={name:file.name,parents:[CONFIG.DRIVE_FOLDER_ID]};const form=new FormData();form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));form.append('file',file);
+    const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{Authorization:`Bearer ${state.accessToken}`},body:form});
+    if(!resp.ok)throw new Error('fail');const r=await resp.json();const id=Date.now().toString(),url=r.webViewLink||`https://drive.google.com/file/d/${r.id}/view`;
+    await sheetsAppend('files!A:G',[[id,r.name,r.id,url,state.user.name,new Date().toISOString(),cat]]);
+    state.files.push({id,name:r.name,driveId:r.id,url,uploadedBy:state.user.name,uploadedAt:new Date().toISOString(),category:cat});
+    showToast('업로드 완료!');renderFiles()}catch(err){console.error(err);showToast('업로드 실패')}};input.click();
+}
+async function deleteFile(idx){if(!confirm('이 파일을 삭제하시겠습니까?'))return;const ok=await sheetsDelete('files',idx+1);if(ok){state.files.splice(idx,1);showToast('삭제됨');renderFiles()}}
+</script>
