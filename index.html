@@ -431,3 +431,354 @@ body {
 <!-- Google APIs -->
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://apis.google.com/js/api.js"></script>
+
+<style>
+/* Login */
+.login-screen {
+  display:flex; align-items:center; justify-content:center; min-height:100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.login-card {
+  background:var(--surface); border-radius:16px; padding:48px; text-align:center;
+  box-shadow:var(--shadow-lg); max-width:400px; width:90%;
+}
+.login-card h1 { font-size:1.5rem; margin-bottom:8px; }
+.login-card p { color:var(--text-secondary); margin-bottom:32px; font-size:0.9rem; }
+.login-card .subtitle { font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px; }
+#google-login-btn {
+  display:inline-flex; align-items:center; gap:10px; padding:12px 24px;
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  font-size:0.95rem; cursor:pointer; transition:var(--transition); font-family:inherit;
+}
+#google-login-btn:hover { background:var(--bg); box-shadow:var(--shadow); }
+
+/* App Layout */
+.app-container { display:none; grid-template-columns:var(--sidebar-width) 1fr; grid-template-rows:var(--header-height) 1fr; min-height:100vh; }
+.app-container.active { display:grid; }
+.header { grid-column:1/-1; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 24px; z-index:100; }
+.header-left { display:flex; align-items:center; gap:12px; }
+.header-left .logo { font-weight:700; font-size:1.1rem; }
+.header-right { display:flex; align-items:center; gap:16px; }
+.user-info { display:flex; align-items:center; gap:10px; font-size:0.85rem; }
+.user-avatar { width:32px; height:32px; border-radius:50%; object-fit:cover; }
+.btn-logout { padding:6px 14px; background:none; border:1px solid var(--border); border-radius:6px; font-size:0.8rem; cursor:pointer; transition:var(--transition); font-family:inherit; color:var(--text-secondary); }
+.btn-logout:hover { background:var(--bg); color:var(--text); }
+
+/* Sidebar */
+.sidebar { background:var(--surface); border-right:1px solid var(--border); padding:20px 12px; overflow-y:auto; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; cursor:pointer; font-size:0.9rem; transition:var(--transition); color:var(--text-secondary); margin-bottom:2px; border:none; background:none; width:100%; text-align:left; font-family:inherit; }
+.nav-item:hover { background:var(--bg); color:var(--text); }
+.nav-item.active { background:var(--accent-light); color:var(--accent); font-weight:600; }
+.nav-item .icon { font-size:1.1rem; width:24px; text-align:center; }
+
+/* Main */
+.main-content { padding:28px; overflow-y:auto; max-height:calc(100vh - var(--header-height)); }
+.page { display:none; animation:fadeIn 0.2s ease; }
+.page.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.page-title { font-size:1.4rem; font-weight:700; margin-bottom:24px; }
+
+/* Cards */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; box-shadow:var(--shadow); }
+.card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.card-title { font-size:1rem; font-weight:600; }
+
+/* Grid */
+.grid-2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+
+/* D-Day Banner */
+.dday-banner { background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#fff; padding:20px 24px; }
+.dday-info { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+.dday-event { font-size:0.95rem; }
+.dday-count { font-size:1.8rem; font-weight:800; }
+
+/* Stats compact */
+.stats-compact { margin-top:12px; }
+.stat-card-sm { text-align:center; padding:14px 12px; }
+.stat-number-sm { font-size:1.4rem; font-weight:700; color:var(--accent); }
+.stat-label-sm { font-size:0.75rem; color:var(--text-secondary); margin-top:2px; }
+
+/* Badges */
+.badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:500; }
+.badge-todo { background:#fee2e2; color:#dc2626; }
+.badge-progress { background:#fef3c7; color:#d97706; }
+.badge-done { background:#d1fae5; color:#059669; }
+.badge-pending { background:#f3f4f6; color:#6b7280; }
+
+/* Progress Bar */
+.progress-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:8px; }
+.progress-fill { height:100%; background:var(--accent); border-radius:3px; transition:width 0.3s ease; }
+
+/* Buttons */
+.btn { padding:8px 16px; border-radius:6px; font-size:0.85rem; cursor:pointer; border:none; transition:var(--transition); font-family:inherit; font-weight:500; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent-hover); }
+.btn-secondary { background:var(--bg); color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover { background:var(--border); }
+.btn-sm { padding:5px 10px; font-size:0.78rem; }
+.btn-danger { background:#fee2e2; color:#dc2626; }
+.btn-danger:hover { background:#fca5a5; }
+
+/* Forms */
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:0.82rem; font-weight:500; margin-bottom:5px; color:var(--text-secondary); }
+.form-control { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:6px; font-size:0.9rem; font-family:inherit; transition:var(--transition); }
+.form-control:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,70,229,0.1); }
+textarea.form-control { resize:vertical; min-height:80px; }
+
+/* Checkbox group */
+.checkbox-group { display:flex; flex-wrap:wrap; gap:8px; }
+.checkbox-group label { display:inline-flex; align-items:center; gap:5px; font-size:0.85rem; cursor:pointer; padding:4px 10px; border:1px solid var(--border); border-radius:6px; transition:var(--transition); }
+.checkbox-group label:has(input:checked) { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
+.checkbox-group input[type="checkbox"] { width:14px; height:14px; }
+
+/* Table */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--border); }
+th { font-weight:600; color:var(--text-secondary); font-size:0.78rem; text-transform:uppercase; }
+tr:hover td { background:var(--bg); }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.active { display:flex; }
+.modal { background:var(--surface); border-radius:12px; padding:28px; width:100%; max-width:520px; max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
+.modal-title { font-size:1.1rem; font-weight:700; margin-bottom:20px; }
+.modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+
+/* Toast */
+.toast { position:fixed; bottom:24px; right:24px; background:var(--text); color:#fff; padding:12px 20px; border-radius:8px; font-size:0.85rem; z-index:2000; opacity:0; transform:translateY(10px); transition:var(--transition); }
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* Budget */
+.budget-summary { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; flex-wrap:wrap; }
+.budget-total { font-size:1.3rem; font-weight:700; }
+.budget-used { color:var(--text-secondary); font-size:0.85rem; }
+
+/* Team */
+.team-row { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); }
+.team-row:last-child { border-bottom:none; }
+.team-left { display:flex; align-items:center; gap:12px; }
+.member-avatar { width:38px; height:38px; border-radius:50%; background:var(--accent-light); display:flex; align-items:center; justify-content:center; font-weight:600; color:var(--accent); font-size:0.85rem; flex-shrink:0; }
+.member-info h4 { font-size:0.9rem; font-weight:600; }
+.member-info p { font-size:0.8rem; color:var(--text-secondary); }
+
+/* File item */
+.file-item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); gap:8px; }
+.file-item:last-child { border-bottom:none; }
+.file-info { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+.file-icon { font-size:1.3rem; flex-shrink:0; }
+.file-btns { display:flex; gap:6px; flex-shrink:0; }
+
+/* Meeting */
+.meeting-item { border-left:3px solid var(--accent); padding-left:14px; margin-bottom:16px; }
+.meeting-date { font-size:0.78rem; color:var(--text-secondary); }
+.meeting-title { font-weight:600; margin:4px 0; }
+.meeting-content { font-size:0.85rem; color:var(--text-secondary); white-space:pre-wrap; }
+.meeting-attendees { font-size:0.78rem; color:var(--accent); margin-top:4px; }
+
+/* Project card clickable */
+.project-card { cursor:pointer; transition:var(--transition); }
+.project-card:hover { border-color:var(--accent); box-shadow:0 2px 8px rgba(79,70,229,0.1); }
+
+/* Loading */
+.loading { text-align:center; padding:40px; color:var(--text-secondary); }
+.spinner { display:inline-block; width:24px; height:24px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.empty-state { text-align:center; padding:40px 20px; color:var(--text-secondary); }
+.empty-state .icon { font-size:2.5rem; margin-bottom:12px; }
+
+/* Mobile */
+.menu-toggle { display:none; background:none; border:none; font-size:1.3rem; cursor:pointer; padding:4px; }
+@media(max-width:768px) {
+  .app-container.active { grid-template-columns:1fr; }
+  .sidebar { position:fixed; left:-280px; top:var(--header-height); bottom:0; width:260px; z-index:200; transition:left 0.3s ease; box-shadow:var(--shadow-lg); }
+  .sidebar.open { left:0; }
+  .menu-toggle { display:block; }
+  .main-content { padding:16px; max-height:calc(100vh - var(--header-height)); }
+  .grid-2, .grid-3 { grid-template-columns:1fr; }
+  .dday-info { flex-direction:column; text-align:center; }
+}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG - 여기에 실제 값 입력!
+// ═══════════════════════════════════════════════════════
+const CONFIG = {
+  CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+  API_KEY: 'YOUR_GOOGLE_API_KEY',
+  SHEET_ID: 'YOUR_GOOGLE_SHEET_ID',
+  DRIVE_FOLDER_ID: 'YOUR_GOOGLE_DRIVE_FOLDER_ID',
+  SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+  DISCOVERY_DOCS: [
+    'https://sheets.googleapis.com/$discovery/rest?version=v4',
+    'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+  ]
+};
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const state = {
+  user: null,
+  tokenClient: null,
+  accessToken: null,
+  gapiInited: false,
+  gisInited: false,
+  currentPage: 'dashboard',
+  projects: [],
+  meetings: [],
+  budget: [],
+  files: [],
+  team: [
+    { name: '강민구', dept: '드림', role: '총괄·기획·작업' },
+    { name: '김하늘', dept: '미션', role: '기획' },
+    { name: '정서현', dept: '유바디', role: '기획·작업' },
+    { name: '정서린', dept: '비전', role: '기획·작업(서브)' },
+    { name: '유윤서', dept: '드림', role: '기획' }
+  ],
+  defaultProjects: [
+    { id:'1', name:'포스터', status:'todo', assignee:'', deadline:'2026-09-01', notes:'주제 1-3안 중 택 or 새 제안 (빠른 컨펌 필요)', category:'포스터' },
+    { id:'2', name:'부스 디자인 (메인: 타지키스탄)', status:'todo', assignee:'', deadline:'', notes:'수익금 전액 선교헌금', category:'부스 디자인' },
+    { id:'3', name:'부스 디자인 (서브: 니즈니 교회)', status:'todo', assignee:'', deadline:'', notes:'별도 부스 마련', category:'부스 디자인' },
+    { id:'4', name:'굿즈 - 의류', status:'todo', assignee:'', deadline:'', notes:'판매/수익 목적, 세련되고 과하지 않은 디자인', category:'굿즈-의류' },
+    { id:'5', name:'굿즈 - 기타', status:'todo', assignee:'', deadline:'', notes:'항목 의논 필요', category:'굿즈-기타' },
+    { id:'6', name:'리플렛', status:'pending', assignee:'', deadline:'', notes:'진행 여부 미정 (작업량 많음, 작년에 많이 남음)', category:'리플렛' },
+    { id:'7', name:'간판/현수막', status:'todo', assignee:'', deadline:'', notes:'외부 장년부 운영 항목', category:'간판/현수막' }
+  ]
+};
+
+// ═══════════════════════════════════════════════════════
+// D-DAY CALCULATOR
+// ═══════════════════════════════════════════════════════
+function updateDday() {
+  const eventDate = new Date('2026-10-18T00:00:00+09:00');
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+  const el = document.getElementById('ddayCount');
+  if (diff > 0) el.textContent = `D-${diff}`;
+  else if (diff === 0) el.textContent = 'D-DAY!';
+  else el.textContent = `D+${Math.abs(diff)}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// GOOGLE API INIT
+// ═══════════════════════════════════════════════════════
+function gapiLoaded() { gapi.load('client', initializeGapiClient); }
+
+async function initializeGapiClient() {
+  try {
+    await gapi.client.init({ apiKey: CONFIG.API_KEY, discoveryDocs: CONFIG.DISCOVERY_DOCS });
+    state.gapiInited = true;
+    maybeEnableButtons();
+  } catch(err) { console.error('GAPI init error:', err); }
+}
+
+function gisLoaded() {
+  state.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.CLIENT_ID,
+    scope: CONFIG.SCOPES,
+    callback: handleTokenResponse,
+  });
+  state.gisInited = true;
+  maybeEnableButtons();
+}
+
+function maybeEnableButtons() {
+  if (state.gapiInited && state.gisInited) {
+    const stored = sessionStorage.getItem('user_info');
+    if (stored) { state.user = JSON.parse(stored); state.tokenClient.requestAccessToken({ prompt:'' }); }
+  }
+}
+
+function handleTokenResponse(resp) {
+  if (resp.error) { console.error('Token error:', resp); return; }
+  state.accessToken = resp.access_token;
+  if (!state.user) {
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${resp.access_token}` }
+    }).then(r=>r.json()).then(info => {
+      state.user = { name:info.name, email:info.email, picture:info.picture };
+      sessionStorage.setItem('user_info', JSON.stringify(state.user));
+      showApp();
+    });
+  } else { showApp(); }
+}
+
+// ═══════════════════════════════════════════════════════
+// LOGIN / LOGOUT
+// ═══════════════════════════════════════════════════════
+function handleLogin() {
+  if (!state.tokenClient) { showToast('Google API 로드 중... 잠시 후 다시 시도하세요.'); return; }
+  state.tokenClient.requestAccessToken({ prompt:'consent' });
+}
+function handleLogout() {
+  if (state.accessToken) google.accounts.oauth2.revoke(state.accessToken);
+  state.user = null; state.accessToken = null;
+  sessionStorage.removeItem('user_info');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appContainer').classList.remove('active');
+}
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appContainer').classList.add('active');
+  document.getElementById('userName').textContent = state.user.name;
+  document.getElementById('userAvatar').src = state.user.picture || '';
+  updateDday();
+  loadAllData();
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function navigateTo(page) {
+  state.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
+  document.getElementById('sidebar').classList.remove('open');
+}
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+// ═══════════════════════════════════════════════════════
+// SHEETS API HELPERS
+// ═══════════════════════════════════════════════════════
+async function sheetsGet(range) {
+  try {
+    const r = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId:CONFIG.SHEET_ID, range });
+    return r.result.values || [];
+  } catch(e) { console.error(`Read ${range}:`, e); return []; }
+}
+
+async function sheetsAppend(range, values) {
+  try {
+    await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: CONFIG.SHEET_ID, range,
+      valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS',
+      resource: { values }
+    });
+    return true;
+  } catch(e) {
+    console.error(`Append ${range}:`, e);
+    // Fallback: try creating sheet if not found
+    if (e.result && e.result.error && e.result.error.code === 400) {
+      showToast('시트를 찾을 수 없습니다. 시트 탭 이름을 확인해주세요.');
+    } else {
+      showToast('저장 실패. 구글 시트 연동을 확인해주세요.');
+    }
+    return false;
+  }
+}
+
+async function sheetsUpdate(range, values) {
+  try {
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: CONFIG.SHEET_ID, range,
+      valueInputOption: 'USER_ENTERED', resource: { values }
+    });
+    return true;
+  } catch(e) { console.error(`Update ${range}:`, e); showToast('업데이트 실패'); return false; }
+}
+</script>
