@@ -249,3 +249,185 @@ body {
     </div>
   </main>
 </div>
+
+<!-- Modal: Meeting -->
+<div class="modal-overlay" id="meetingModal">
+  <div class="modal">
+    <h3 class="modal-title" id="meetingModalTitle">새 회의록</h3>
+    <div class="form-group">
+      <label>날짜</label>
+      <input type="date" class="form-control" id="meetingDate">
+    </div>
+    <div class="form-group">
+      <label>제목</label>
+      <input type="text" class="form-control" id="meetingTitle" placeholder="회의 제목">
+    </div>
+    <div class="form-group">
+      <label>참석자</label>
+      <div id="meetingAttendees" class="checkbox-group"></div>
+    </div>
+    <div class="form-group">
+      <label>내용</label>
+      <textarea class="form-control" id="meetingContent" rows="8" placeholder="회의 내용을 입력하세요..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('meetingModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveMeeting()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Budget -->
+<div class="modal-overlay" id="budgetModal">
+  <div class="modal">
+    <h3 class="modal-title">지출 등록</h3>
+    <div class="form-group">
+      <label>날짜</label>
+      <input type="date" class="form-control" id="budgetDate">
+    </div>
+    <div class="form-group">
+      <label>카테고리</label>
+      <select class="form-control" id="budgetCategory">
+        <option value="포스터">포스터</option>
+        <option value="부스 디자인">부스 디자인</option>
+        <option value="굿즈-의류">굿즈-의류</option>
+        <option value="굿즈-기타">굿즈-기타</option>
+        <option value="리플렛">리플렛</option>
+        <option value="간판/현수막">간판/현수막</option>
+        <option value="인쇄">인쇄</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>항목</label>
+      <input type="text" class="form-control" id="budgetItem" placeholder="예: 포스터 인쇄비">
+    </div>
+    <div class="form-group">
+      <label>금액 (원)</label>
+      <input type="number" class="form-control" id="budgetAmount" placeholder="50000">
+    </div>
+    <div class="form-group">
+      <label>비고</label>
+      <input type="text" class="form-control" id="budgetNote" placeholder="메모 (선택)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('budgetModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveBudget()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Project -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <h3 class="modal-title" id="projectModalTitle">프로젝트</h3>
+    <input type="hidden" id="projectEditId">
+    <div class="form-group" id="projectNameGroup">
+      <label>프로젝트 이름</label>
+      <input type="text" class="form-control" id="projectName" placeholder="예: 초대장 디자인">
+    </div>
+    <div class="form-group" id="projectCategoryGroup">
+      <label>카테고리</label>
+      <select class="form-control" id="projectCategorySelect">
+        <option value="포스터">포스터</option>
+        <option value="부스 디자인">부스 디자인</option>
+        <option value="굿즈-의류">굿즈-의류</option>
+        <option value="굿즈-기타">굿즈-기타</option>
+        <option value="리플렛">리플렛</option>
+        <option value="간판/현수막">간판/현수막</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>상태</label>
+      <select class="form-control" id="projectStatus">
+        <option value="todo">할 일</option>
+        <option value="progress">진행 중</option>
+        <option value="done">완료</option>
+        <option value="pending">보류</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>담당자 (복수 선택 가능)</label>
+      <div id="projectAssigneeCheckboxes" class="checkbox-group"></div>
+    </div>
+    <div class="form-group">
+      <label>마감일</label>
+      <input type="date" class="form-control" id="projectDeadline">
+    </div>
+    <div class="form-group">
+      <label>메모</label>
+      <textarea class="form-control" id="projectNotes" rows="3" placeholder="프로젝트 메모..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('projectModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveProject()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Project Detail -->
+<div class="modal-overlay" id="projectDetailModal">
+  <div class="modal" style="max-width:600px;">
+    <h3 class="modal-title" id="projectDetailTitle">프로젝트 상세</h3>
+    <div id="projectDetailContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('projectDetailModal')">닫기</button>
+      <button class="btn btn-primary" id="projectDetailEditBtn" onclick="">수정</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Team Member -->
+<div class="modal-overlay" id="addMemberModal">
+  <div class="modal">
+    <h3 class="modal-title">팀원 추가</h3>
+    <div class="form-group">
+      <label>이름</label>
+      <input type="text" class="form-control" id="newMemberName" placeholder="이름">
+    </div>
+    <div class="form-group">
+      <label>소속</label>
+      <input type="text" class="form-control" id="newMemberDept" placeholder="소속 (예: 드림)">
+    </div>
+    <div class="form-group">
+      <label>역할</label>
+      <input type="text" class="form-control" id="newMemberRole" placeholder="역할 (예: 기획·작업)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addMemberModal')">취소</button>
+      <button class="btn btn-primary" onclick="addMember()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Team Member -->
+<div class="modal-overlay" id="editMemberModal">
+  <div class="modal">
+    <h3 class="modal-title">역할 수정</h3>
+    <input type="hidden" id="editMemberIdx">
+    <div class="form-group">
+      <label>이름</label>
+      <input type="text" class="form-control" id="editMemberName" disabled>
+    </div>
+    <div class="form-group">
+      <label>소속</label>
+      <input type="text" class="form-control" id="editMemberDept">
+    </div>
+    <div class="form-group">
+      <label>역할</label>
+      <input type="text" class="form-control" id="editMemberRole">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('editMemberModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveEditMember()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Google APIs -->
+<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://apis.google.com/js/api.js"></script>
