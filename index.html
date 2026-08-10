@@ -782,3 +782,472 @@ async function sheetsUpdate(range, values) {
   } catch(e) { console.error(`Update ${range}:`, e); showToast('업데이트 실패'); return false; }
 }
 </script>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════════════════════════
+async function loadAllData() {
+  // Load team from localStorage (persists across sessions without sheets)
+  const savedTeam = localStorage.getItem('team_data');
+  if (savedTeam) state.team = JSON.parse(savedTeam);
+
+  await Promise.all([loadProjects(), loadMeetings(), loadBudget(), loadFiles()]);
+  renderDashboard();
+  renderTeam();
+}
+
+async function loadProjects() {
+  const rows = await sheetsGet('projects!A2:G');
+  if (rows.length === 0) {
+    state.projects = [...state.defaultProjects];
+  } else {
+    state.projects = rows.map(row => ({
+      id:row[0]||'', name:row[1]||'', status:row[2]||'todo',
+      assignee:row[3]||'', deadline:row[4]||'', notes:row[5]||'', category:row[6]||''
+    }));
+  }
+  renderProjects();
+}
+
+async function loadMeetings() {
+  const rows = await sheetsGet('meetings!A2:G');
+  state.meetings = rows.map(row => ({
+    id:row[0]||'', date:row[1]||'', title:row[2]||'',
+    content:row[3]||'', author:row[4]||'', createdAt:row[5]||'', attendees:row[6]||''
+  })).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  renderMeetings();
+}
+
+async function loadBudget() {
+  const rows = await sheetsGet('budget!A2:G');
+  state.budget = rows.map(row => ({
+    id:row[0]||'', category:row[1]||'', item:row[2]||'',
+    amount:parseInt(row[3])||0, date:row[4]||'', note:row[5]||'', createdBy:row[6]||''
+  }));
+  renderBudget();
+}
+
+async function loadFiles() {
+  const rows = await sheetsGet('files!A2:G');
+  state.files = rows.map(row => ({
+    id:row[0]||'', name:row[1]||'', driveId:row[2]||'',
+    url:row[3]||'', uploadedBy:row[4]||'', uploadedAt:row[5]||'', category:row[6]||''
+  }));
+  renderFiles();
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER: DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderDashboard() {
+  const total = state.projects.length;
+  const progress = state.projects.filter(p=>p.status==='progress').length;
+  const done = state.projects.filter(p=>p.status==='done').length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statProgress').textContent = progress;
+  document.getElementById('statDone').textContent = done;
+
+  // Project progress with assignee
+  const progressHtml = state.projects.map(p => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+      <div style="flex:1;">
+        <span style="font-size:0.88rem;">${escapeHtml(p.name)}</span>
+        ${p.assignee ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-left:8px;">👤 ${escapeHtml(p.assignee)}</span>` : ''}
+      </div>
+      <span class="badge badge-${p.status}">${getStatusLabel(p.status)}</span>
+    </div>
+  `).join('');
+  document.getElementById('dashboardProgress').innerHTML = progressHtml || '<p class="empty-state">프로젝트가 없습니다</p>';
+
+  // Budget
+  const totalBudget = 1000000;
+  const usedBudget = state.budget.reduce((s,b)=>s+b.amount, 0);
+  const pct = Math.min((usedBudget/totalBudget)*100, 100);
+  document.getElementById('budgetOverview').textContent = `₩${usedBudget.toLocaleString()} / ₩${totalBudget.toLocaleString()}`;
+  document.getElementById('budgetBar').style.width = pct+'%';
+
+  // Recent meetings
+  const recent = state.meetings.slice(0,3);
+  document.getElementById('dashboardMeetings').innerHTML = recent.length > 0
+    ? recent.map(m=>`<div class="meeting-item"><div class="meeting-date">${m.date} · ${escapeHtml(m.author)}</div><div class="meeting-title">${escapeHtml(m.title)}</div></div>`).join('')
+    : '<p class="empty-state">회의록이 없습니다</p>';
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER: TEAM (세로 1줄, 수정 가능)
+// ═══════════════════════════════════════════════════════
+function renderTeam() {
+  const html = state.team.map((m, i) => `
+    <div class="card team-row">
+      <div class="team-left">
+        <div class="member-avatar">${m.name.charAt(0)}</div>
+        <div class="member-info">
+          <h4>${escapeHtml(m.name)}</h4>
+          <p>${escapeHtml(m.dept)} · ${escapeHtml(m.role)}</p>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="openEditMember(${i})">수정</button>
+    </div>
+  `).join('');
+  document.getElementById('teamList').innerHTML = html;
+}
+
+function openAddMemberModal() {
+  document.getElementById('newMemberName').value = '';
+  document.getElementById('newMemberDept').value = '';
+  document.getElementById('newMemberRole').value = '';
+  openModal('addMemberModal');
+}
+
+function addMember() {
+  const name = document.getElementById('newMemberName').value.trim();
+  const dept = document.getElementById('newMemberDept').value.trim();
+  const role = document.getElementById('newMemberRole').value.trim();
+  if (!name) { showToast('이름을 입력해주세요'); return; }
+  state.team.push({ name, dept, role });
+  localStorage.setItem('team_data', JSON.stringify(state.team));
+  showToast(`${name} 님이 추가되었습니다`);
+  renderTeam();
+  closeModal('addMemberModal');
+}
+
+function openEditMember(idx) {
+  const m = state.team[idx];
+  document.getElementById('editMemberIdx').value = idx;
+  document.getElementById('editMemberName').value = m.name;
+  document.getElementById('editMemberDept').value = m.dept;
+  document.getElementById('editMemberRole').value = m.role;
+  openModal('editMemberModal');
+}
+
+function saveEditMember() {
+  const idx = parseInt(document.getElementById('editMemberIdx').value);
+  state.team[idx].dept = document.getElementById('editMemberDept').value.trim();
+  state.team[idx].role = document.getElementById('editMemberRole').value.trim();
+  localStorage.setItem('team_data', JSON.stringify(state.team));
+  showToast('역할이 수정되었습니다');
+  renderTeam();
+  closeModal('editMemberModal');
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER: PROJECTS (다중 담당자, 상세 보기)
+// ═══════════════════════════════════════════════════════
+function renderProjects(filter = 'all') {
+  let projects = state.projects;
+  if (filter !== 'all') projects = projects.filter(p => p.status === filter);
+
+  if (projects.length === 0) {
+    document.getElementById('projectsList').innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>해당 상태의 프로젝트가 없습니다</p></div>';
+    return;
+  }
+
+  const html = projects.map(p => `
+    <div class="card project-card" onclick="openProjectDetail('${p.id}')">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:200px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <strong style="font-size:0.95rem;">${escapeHtml(p.name)}</strong>
+            <span class="badge badge-${p.status}">${getStatusLabel(p.status)}</span>
+          </div>
+          <div style="font-size:0.82rem; color:var(--text-secondary);">
+            ${p.assignee ? '👤 '+escapeHtml(p.assignee) : '담당자 미지정'}
+            ${p.deadline ? ' · 📅 '+p.deadline : ''}
+          </div>
+          ${p.notes ? `<div style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">📝 ${escapeHtml(p.notes)}</div>` : ''}
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openProjectModal('${p.id}')">수정</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('projectsList').innerHTML = html;
+}
+
+function filterProjects(filter) {
+  document.querySelectorAll('.project-filter').forEach(el => el.classList.toggle('active', el.dataset.filter === filter));
+  renderProjects(filter);
+}
+
+function openProjectDetail(id) {
+  const p = state.projects.find(x=>x.id===id);
+  if (!p) return;
+  document.getElementById('projectDetailTitle').textContent = p.name;
+  document.getElementById('projectDetailContent').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <span class="badge badge-${p.status}" style="font-size:0.85rem; padding:5px 14px;">${getStatusLabel(p.status)}</span>
+    </div>
+    <table style="font-size:0.88rem;">
+      <tr><td style="font-weight:600; width:80px; padding:8px 12px 8px 0;">카테고리</td><td>${escapeHtml(p.category)||'-'}</td></tr>
+      <tr><td style="font-weight:600; padding:8px 12px 8px 0;">담당자</td><td>${escapeHtml(p.assignee)||'미지정'}</td></tr>
+      <tr><td style="font-weight:600; padding:8px 12px 8px 0;">마감일</td><td>${p.deadline||'미정'}</td></tr>
+      <tr><td style="font-weight:600; padding:8px 12px 8px 0;">메모</td><td style="white-space:pre-wrap;">${escapeHtml(p.notes)||'-'}</td></tr>
+    </table>
+  `;
+  document.getElementById('projectDetailEditBtn').onclick = () => { closeModal('projectDetailModal'); openProjectModal(id); };
+  openModal('projectDetailModal');
+}
+
+function buildAssigneeCheckboxes(selected) {
+  const names = selected ? selected.split(',').map(s=>s.trim()) : [];
+  return state.team.map(m =>
+    `<label><input type="checkbox" value="${escapeHtml(m.name)}" ${names.includes(m.name)?'checked':''}> ${escapeHtml(m.name)}</label>`
+  ).join('');
+}
+
+function getCheckedAssignees() {
+  return Array.from(document.querySelectorAll('#projectAssigneeCheckboxes input:checked'))
+    .map(cb=>cb.value).join(', ');
+}
+
+function openProjectModal(id) {
+  const isNew = !id;
+  const p = isNew ? null : state.projects.find(x=>x.id===id);
+  document.getElementById('projectEditId').value = id || '';
+  document.getElementById('projectModalTitle').textContent = isNew ? '새 프로젝트 추가' : (p.name + ' 수정');
+  document.getElementById('projectNameGroup').style.display = isNew ? 'block' : 'none';
+  document.getElementById('projectCategoryGroup').style.display = isNew ? 'block' : 'none';
+  document.getElementById('projectName').value = '';
+  document.getElementById('projectStatus').value = p ? p.status : 'todo';
+  document.getElementById('projectDeadline').value = p ? p.deadline : '';
+  document.getElementById('projectNotes').value = p ? p.notes : '';
+  document.getElementById('projectAssigneeCheckboxes').innerHTML = buildAssigneeCheckboxes(p ? p.assignee : '');
+  if (!isNew) document.getElementById('projectCategorySelect').value = p.category;
+  openModal('projectModal');
+}
+
+function openNewProjectModal() { openProjectModal(null); }
+
+async function saveProject() {
+  const id = document.getElementById('projectEditId').value;
+  const assignee = getCheckedAssignees();
+
+  if (!id) {
+    const name = document.getElementById('projectName').value.trim();
+    if (!name) { showToast('프로젝트 이름을 입력해주세요'); return; }
+    const newP = {
+      id: Date.now().toString(), name,
+      status: document.getElementById('projectStatus').value,
+      assignee,
+      deadline: document.getElementById('projectDeadline').value,
+      notes: document.getElementById('projectNotes').value,
+      category: document.getElementById('projectCategorySelect').value
+    };
+    const ok = await sheetsAppend('projects!A:G', [[newP.id, newP.name, newP.status, newP.assignee, newP.deadline, newP.notes, newP.category]]);
+    if (ok) { state.projects.push(newP); showToast('프로젝트가 추가되었습니다'); renderProjects(); renderDashboard(); }
+    closeModal('projectModal'); return;
+  }
+
+  const idx = state.projects.findIndex(p=>p.id===id);
+  if (idx===-1) return;
+  state.projects[idx].status = document.getElementById('projectStatus').value;
+  state.projects[idx].assignee = assignee;
+  state.projects[idx].deadline = document.getElementById('projectDeadline').value;
+  state.projects[idx].notes = document.getElementById('projectNotes').value;
+  const p = state.projects[idx];
+  const ok = await sheetsUpdate(`projects!A${idx+2}:G${idx+2}`, [[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category]]);
+  if (ok) { showToast('프로젝트가 업데이트되었습니다'); renderProjects(); renderDashboard(); }
+  closeModal('projectModal');
+}
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// RENDER: FILES (열기 + 다운로드)
+// ═══════════════════════════════════════════════════════
+function renderFiles() {
+  if (state.files.length === 0) {
+    document.getElementById('filesList').innerHTML = '<div class="empty-state"><div class="icon">📎</div><p>업로드된 파일이 없습니다</p></div>';
+    return;
+  }
+  const html = state.files.map(f => `
+    <div class="file-item">
+      <div class="file-info">
+        <span class="file-icon">${getFileIcon(f.name)}</span>
+        <div style="min-width:0;">
+          <div style="font-size:0.9rem; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(f.name)}</div>
+          <div style="font-size:0.78rem; color:var(--text-secondary);">
+            ${f.category ? f.category+' · ' : ''}${escapeHtml(f.uploadedBy)} · ${formatDate(f.uploadedAt)}
+          </div>
+        </div>
+      </div>
+      <div class="file-btns">
+        <a href="${f.url}" target="_blank" class="btn btn-secondary btn-sm">열기</a>
+        <a href="https://drive.google.com/uc?export=download&id=${f.driveId}" class="btn btn-primary btn-sm" title="다운로드">⬇</a>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('filesList').innerHTML = html;
+}
+
+function uploadFile() {
+  const category = document.getElementById('fileCategory').value;
+  const input = document.createElement('input');
+  input.type = 'file'; input.multiple = false;
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    showToast('업로드 중...');
+    try {
+      const metadata = { name:file.name, parents:[CONFIG.DRIVE_FOLDER_ID] };
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+      form.append('file', file);
+      const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
+        method:'POST', headers:{Authorization:`Bearer ${state.accessToken}`}, body:form
+      });
+      if (!resp.ok) throw new Error('Upload failed');
+      const result = await resp.json();
+      const id = Date.now().toString();
+      const uploadedAt = new Date().toISOString();
+      const url = result.webViewLink || `https://drive.google.com/file/d/${result.id}/view`;
+      await sheetsAppend('files!A:G', [[id, result.name, result.id, url, state.user.name, uploadedAt, category]]);
+      state.files.push({id, name:result.name, driveId:result.id, url, uploadedBy:state.user.name, uploadedAt, category});
+      showToast('파일이 업로드되었습니다!');
+      renderFiles();
+    } catch(err) { console.error('Upload error:', err); showToast('업로드 실패. 다시 시도해주세요.'); }
+  };
+  input.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER: MEETINGS (참석자 포함)
+// ═══════════════════════════════════════════════════════
+function renderMeetings() {
+  if (state.meetings.length === 0) {
+    document.getElementById('meetingsList').innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>등록된 회의록이 없습니다</p></div>';
+    return;
+  }
+  const html = state.meetings.map(m => `
+    <div class="card" style="padding:16px; margin-bottom:12px;">
+      <div class="meeting-item" style="margin:0;">
+        <div class="meeting-date">${m.date} · ${escapeHtml(m.author)}</div>
+        <div class="meeting-title">${escapeHtml(m.title)}</div>
+        ${m.attendees ? `<div class="meeting-attendees">참석: ${escapeHtml(m.attendees)}</div>` : ''}
+        <div class="meeting-content">${escapeHtml(m.content)}</div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('meetingsList').innerHTML = html;
+}
+
+function openMeetingModal() {
+  document.getElementById('meetingDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('meetingTitle').value = '';
+  document.getElementById('meetingContent').value = '';
+  // Build attendees checkboxes
+  document.getElementById('meetingAttendees').innerHTML = state.team.map(m =>
+    `<label><input type="checkbox" value="${escapeHtml(m.name)}"> ${escapeHtml(m.name)}</label>`
+  ).join('');
+  openModal('meetingModal');
+}
+
+async function saveMeeting() {
+  const date = document.getElementById('meetingDate').value;
+  const title = document.getElementById('meetingTitle').value.trim();
+  const content = document.getElementById('meetingContent').value.trim();
+  const attendees = Array.from(document.querySelectorAll('#meetingAttendees input:checked')).map(cb=>cb.value).join(', ');
+  if (!title) { showToast('제목을 입력해주세요'); return; }
+
+  const id = Date.now().toString();
+  const author = state.user.name;
+  const createdAt = new Date().toISOString();
+  const ok = await sheetsAppend('meetings!A:G', [[id, date, title, content, author, createdAt, attendees]]);
+  if (ok) {
+    state.meetings.unshift({id, date, title, content, author, createdAt, attendees});
+    showToast('회의록이 저장되었습니다');
+    renderMeetings(); renderDashboard();
+  }
+  closeModal('meetingModal');
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER: BUDGET
+// ═══════════════════════════════════════════════════════
+function renderBudget() {
+  const totalBudget = 1000000;
+  const used = state.budget.reduce((s,b)=>s+b.amount, 0);
+  const remaining = totalBudget - used;
+  const pct = Math.min((used/totalBudget)*100, 100);
+  document.getElementById('budgetTotalDisplay').textContent = `₩${used.toLocaleString()} / ₩${totalBudget.toLocaleString()}`;
+  document.getElementById('budgetRemaining').textContent = `잔여: ₩${remaining.toLocaleString()}`;
+  document.getElementById('budgetProgressBar').style.width = pct+'%';
+  if (pct > 80) document.getElementById('budgetProgressBar').style.background = 'var(--danger)';
+  else if (pct > 60) document.getElementById('budgetProgressBar').style.background = 'var(--warning)';
+
+  const tbody = document.getElementById('budgetTable');
+  if (state.budget.length === 0) {
+    tbody.innerHTML = '';
+    document.getElementById('budgetEmpty').style.display = 'block';
+  } else {
+    document.getElementById('budgetEmpty').style.display = 'none';
+    tbody.innerHTML = state.budget.map(b => `
+      <tr><td>${b.date}</td><td>${escapeHtml(b.category)}</td><td>${escapeHtml(b.item)}</td>
+      <td style="font-weight:600;">₩${b.amount.toLocaleString()}</td>
+      <td style="color:var(--text-secondary);font-size:0.82rem;">${escapeHtml(b.note)}</td>
+      <td style="color:var(--text-secondary);font-size:0.82rem;">${escapeHtml(b.createdBy)}</td></tr>
+    `).join('');
+  }
+}
+
+function openBudgetModal() {
+  document.getElementById('budgetDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('budgetCategory').value = '기타';
+  document.getElementById('budgetItem').value = '';
+  document.getElementById('budgetAmount').value = '';
+  document.getElementById('budgetNote').value = '';
+  openModal('budgetModal');
+}
+
+async function saveBudget() {
+  const date = document.getElementById('budgetDate').value;
+  const category = document.getElementById('budgetCategory').value;
+  const item = document.getElementById('budgetItem').value.trim();
+  const amount = parseInt(document.getElementById('budgetAmount').value) || 0;
+  const note = document.getElementById('budgetNote').value.trim();
+  if (!item || amount <= 0) { showToast('항목과 금액을 입력해주세요'); return; }
+
+  const id = Date.now().toString();
+  const createdBy = state.user.name;
+  const ok = await sheetsAppend('budget!A:G', [[id, category, item, amount.toString(), date, note, createdBy]]);
+  if (ok) {
+    state.budget.push({id, category, item, amount, date, note, createdBy});
+    showToast('지출이 등록되었습니다');
+    renderBudget(); renderDashboard();
+  }
+  closeModal('budgetModal');
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function getStatusLabel(s) { return {todo:'할 일',progress:'진행 중',done:'완료',pending:'보류'}[s]||s; }
+function getFileIcon(name) {
+  const ext = (name||'').split('.').pop().toLowerCase();
+  const m = {pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📽️',pptx:'📽️',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',gif:'🖼️',svg:'🖼️',psd:'🎨',ai:'🎨',fig:'🎨',zip:'📦',rar:'📦',mp4:'🎬',mov:'🎬'};
+  return m[ext]||'📁';
+}
+function formatDate(d) { if(!d)return''; try{return new Date(d).toLocaleDateString('ko-KR',{year:'numeric',month:'short',day:'numeric'})}catch{return d;} }
+function escapeHtml(s) { if(!s)return''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+// Close modals on overlay click / Escape
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('active'); }));
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active')); });
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  if (typeof gapi !== 'undefined') gapiLoaded();
+  if (typeof google !== 'undefined' && google.accounts) gisLoaded();
+  updateDday();
+});
+
+// Token refresh every 50min
+setInterval(() => { if(state.accessToken && state.tokenClient) state.tokenClient.requestAccessToken({prompt:''}); }, 50*60*1000);
+</script>
+</body>
+</html>
