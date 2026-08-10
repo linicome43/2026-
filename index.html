@@ -768,24 +768,41 @@ async function sheetsGet(range) {
   try {
     const r = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId:CONFIG.SHEET_ID, range });
     return r.result.values || [];
-  } catch(e) { console.error(`Read ${range}:`, e); return []; }
+  } catch(e) {
+    console.error(`Read ${range}:`, e);
+    if (e.result && e.result.error) {
+      const err = e.result.error;
+      if (err.code === 403) console.error('권한 없음 - Sheets API가 활성화되어 있는지, 시트 공유 권한을 확인하세요');
+      if (err.code === 404) console.error('시트를 찾을 수 없음 - SHEET_ID 또는 시트 탭 이름을 확인하세요');
+    }
+    return [];
+  }
 }
 
 async function sheetsAppend(range, values) {
   try {
-    await gapi.client.sheets.spreadsheets.values.append({
+    const result = await gapi.client.sheets.spreadsheets.values.append({
       spreadsheetId: CONFIG.SHEET_ID, range,
       valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS',
       resource: { values }
     });
+    console.log('Append success:', range, result);
     return true;
   } catch(e) {
     console.error(`Append ${range}:`, e);
-    // Fallback: try creating sheet if not found
-    if (e.result && e.result.error && e.result.error.code === 400) {
-      showToast('시트를 찾을 수 없습니다. 시트 탭 이름을 확인해주세요.');
+    if (e.result && e.result.error) {
+      const err = e.result.error;
+      if (err.code === 403) {
+        showToast('권한 오류: 시트에 편집 권한이 있는지 확인하세요');
+      } else if (err.code === 404) {
+        showToast('시트를 찾을 수 없습니다. 시트 탭 이름을 확인해주세요 (meetings, budget 등)');
+      } else if (err.code === 400) {
+        showToast('요청 오류: 시트 탭 이름이 정확한지 확인하세요');
+      } else {
+        showToast(`저장 실패 (${err.code}): ${err.message}`);
+      }
     } else {
-      showToast('저장 실패. 구글 시트 연동을 확인해주세요.');
+      showToast('저장 실패: 네트워크 또는 인증 오류');
     }
     return false;
   }
@@ -798,7 +815,15 @@ async function sheetsUpdate(range, values) {
       valueInputOption: 'USER_ENTERED', resource: { values }
     });
     return true;
-  } catch(e) { console.error(`Update ${range}:`, e); showToast('업데이트 실패'); return false; }
+  } catch(e) {
+    console.error(`Update ${range}:`, e);
+    if (e.result && e.result.error) {
+      showToast(`업데이트 실패 (${e.result.error.code}): ${e.result.error.message}`);
+    } else {
+      showToast('업데이트 실패');
+    }
+    return false;
+  }
 }
 </script>
 
