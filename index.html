@@ -737,7 +737,7 @@ function handleLogin() {
 function handleLogout() {
   if (state.accessToken) google.accounts.oauth2.revoke(state.accessToken);
   state.user = null; state.accessToken = null;
-  sessionStorage.removeItem('user_info');
+  localStorage.removeItem('user_info');
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('appContainer').classList.remove('active');
 }
