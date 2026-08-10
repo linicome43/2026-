@@ -1,1317 +1,372 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<!--
-╔══════════════════════════════════════════════════════════════════════╗
-║  선교대회 디자인팀 프로젝트 관리 허브                                    ║
-║  Mission Conference Design Team Project Management Hub               ║
-╚══════════════════════════════════════════════════════════════════════╝
-
-【 설정 가이드 / Setup Guide 】
-
-1. Google Cloud Console에서:
-   - Google Sheets API, Google Drive API, Google Picker API 활성화
-   - OAuth 2.0 클라이언트 ID 생성 (웹 애플리케이션)
-   - API 키 생성
-
-2. 아래 CONFIG 객체에 값 입력
-
-3. Google Sheets에 시트 4개 생성:
-   - projects: id, name, status, assignee, deadline, notes, category
-   - meetings: id, date, title, content, author, createdAt, attendees
-   - budget: id, category, item, amount, date, note, createdBy
-   - files: id, name, driveId, url, uploadedBy, uploadedAt, category
--->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>선교대회 디자인팀 허브</title>
 <style>
-:root {
-  --bg: #f8f9fa;
-  --surface: #ffffff;
-  --text: #1a1a2e;
-  --text-secondary: #6b7280;
-  --border: #e5e7eb;
-  --accent: #4f46e5;
-  --accent-light: #eef2ff;
-  --accent-hover: #4338ca;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --sidebar-width: 260px;
-  --header-height: 60px;
-  --radius: 10px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08);
-  --transition: all 0.2s ease;
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-  background: var(--bg); color: var(--text); line-height:1.6; min-height:100vh;
-}
+:root{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--text-secondary:#6b7280;--border:#e5e7eb;--accent:#4f46e5;--accent-light:#eef2ff;--accent-hover:#4338ca;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--sidebar-width:260px;--header-height:60px;--radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.08);--transition:all .2s ease}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2)}
+.login-card{background:var(--surface);border-radius:16px;padding:48px;text-align:center;box-shadow:var(--shadow-lg);max-width:400px;width:90%}
+.login-card h1{font-size:1.5rem;margin-bottom:8px}.login-card p{color:var(--text-secondary);margin-bottom:32px;font-size:.9rem}
+.login-card .subtitle{font-size:.85rem;color:var(--text-secondary);margin-bottom:4px}
+#google-login-btn{display:inline-flex;align-items:center;gap:10px;padding:12px 24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:.95rem;cursor:pointer;transition:var(--transition);font-family:inherit}
+#google-login-btn:hover{background:var(--bg);box-shadow:var(--shadow)}
+.app-container{display:none;grid-template-columns:var(--sidebar-width) 1fr;grid-template-rows:var(--header-height) 1fr;min-height:100vh}
+.app-container.active{display:grid}
+.header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:100}
+.header-left{display:flex;align-items:center;gap:12px}.header-left .logo{font-weight:700;font-size:1.1rem}
+.header-right{display:flex;align-items:center;gap:16px}
+.user-info{display:flex;align-items:center;gap:10px;font-size:.85rem}
+.user-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover}
+.btn-logout{padding:6px 14px;background:none;border:1px solid var(--border);border-radius:6px;font-size:.8rem;cursor:pointer;transition:var(--transition);font-family:inherit;color:var(--text-secondary)}
+.btn-logout:hover{background:var(--bg);color:var(--text)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:20px 12px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;transition:var(--transition);color:var(--text-secondary);margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--accent-light);color:var(--accent);font-weight:600}
+.nav-item .icon{font-size:1.1rem;width:24px;text-align:center}
+.main-content{padding:28px;overflow-y:auto;max-height:calc(100vh - var(--header-height))}
+.page{display:none;animation:fadeIn .2s ease}.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-title{font-size:1.4rem;font-weight:700;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card-title{font-size:1rem;font-weight:600}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.dday-banner{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;padding:20px 24px}
+.dday-info{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.dday-event{font-size:.95rem}.dday-count{font-size:1.8rem;font-weight:800}
+.stats-compact{margin-top:12px}.stat-card-sm{text-align:center;padding:14px 12px}
+.stat-number-sm{font-size:1.4rem;font-weight:700;color:var(--accent)}.stat-label-sm{font-size:.75rem;color:var(--text-secondary);margin-top:2px}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:500}
+.badge-todo{background:#fee2e2;color:#dc2626}.badge-progress{background:#fef3c7;color:#d97706}
+.badge-done{background:#d1fae5;color:#059669}.badge-pending{background:#f3f4f6;color:#6b7280}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s ease}
+.btn{padding:8px 16px;border-radius:6px;font-size:.85rem;cursor:pointer;border:none;transition:var(--transition);font-family:inherit;font-weight:500}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--border)}
+.btn-sm{padding:5px 10px;font-size:.78rem}.btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
+.btn-icon{padding:4px 8px;font-size:.8rem;background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer}
+.form-group{margin-bottom:14px}.form-group label{display:block;font-size:.82rem;font-weight:500;margin-bottom:5px;color:var(--text-secondary)}
+.form-control{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;font-family:inherit;transition:var(--transition)}
+.form-control:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+textarea.form-control{resize:vertical;min-height:80px}
+.checkbox-group{display:flex;flex-wrap:wrap;gap:8px}
+.checkbox-group label{display:inline-flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer;padding:4px 10px;border:1px solid var(--border);border-radius:6px;transition:var(--transition)}
+.checkbox-group label:has(input:checked){background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+.checkbox-group input[type="checkbox"]{width:14px;height:14px}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter-bar .btn.active{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+th{font-weight:600;color:var(--text-secondary);font-size:.78rem;text-transform:uppercase}
+tr:hover td{background:var(--bg)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.active{display:flex}.modal{background:var(--surface);border-radius:12px;padding:28px;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal-title{font-size:1.1rem;font-weight:700;margin-bottom:20px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 20px;border-radius:8px;font-size:.85rem;z-index:2000;opacity:0;transform:translateY(10px);transition:var(--transition)}
+.toast.show{opacity:1;transform:translateY(0)}
+.budget-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.budget-total{font-size:1.3rem;font-weight:700}.budget-used{color:var(--text-secondary);font-size:.85rem}
+.team-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.team-row:last-child{border-bottom:none}
+.team-left{display:flex;align-items:center;gap:12px}
+.member-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--accent);font-size:.85rem;flex-shrink:0}
+.member-info h4{font-size:.9rem;font-weight:600}.member-info p{font-size:.8rem;color:var(--text-secondary)}
+.member-projects{font-size:.75rem;color:var(--accent);margin-top:2px}
+.file-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:8px}
+.file-item:last-child{border-bottom:none}.file-info{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.file-icon{font-size:1.3rem;flex-shrink:0}.file-btns{display:flex;gap:6px;flex-shrink:0}
+.meeting-card{border-left:3px solid var(--accent);padding:14px 16px;margin-bottom:12px;background:var(--surface);border-radius:0 var(--radius) var(--radius) 0;border:1px solid var(--border);border-left:3px solid var(--accent)}
+.meeting-date{font-size:.95rem;font-weight:600;color:var(--text)}.meeting-day{font-size:.82rem;color:var(--accent);margin-left:6px}
+.meeting-title{font-weight:600;margin:6px 0 4px}.meeting-attendees{font-size:.78rem;color:var(--accent)}
+.meeting-content{font-size:.85rem;color:var(--text-secondary);white-space:pre-wrap;margin-top:8px;max-height:80px;overflow:hidden;transition:max-height .3s ease}
+.meeting-content.expanded{max-height:none}
+.meeting-expand{font-size:.78rem;color:var(--accent);cursor:pointer;margin-top:4px;display:none}
+.meeting-actions{display:flex;gap:6px;margin-top:8px}
+.project-card{cursor:pointer;transition:var(--transition)}.project-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(79,70,229,.1)}
+.category-section{margin-bottom:24px}.category-title{font-size:1rem;font-weight:600;margin-bottom:10px;padding:8px 12px;background:var(--accent-light);border-radius:6px;color:var(--accent);display:flex;justify-content:space-between;align-items:center}
+.loading{text-align:center;padding:40px;color:var(--text-secondary)}
+.spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-secondary)}.empty-state .icon{font-size:2.5rem;margin-bottom:12px}
+.menu-toggle{display:none;background:none;border:none;font-size:1.3rem;cursor:pointer;padding:4px}
+@media(max-width:768px){.app-container.active{grid-template-columns:1fr}.sidebar{position:fixed;left:-280px;top:var(--header-height);bottom:0;width:260px;z-index:200;transition:left .3s ease;box-shadow:var(--shadow-lg)}.sidebar.open{left:0}.menu-toggle{display:block}.main-content{padding:16px;max-height:calc(100vh - var(--header-height))}.grid-2,.grid-3{grid-template-columns:1fr}.dday-info{flex-direction:column;text-align:center}}
 </style>
 </head>
 <body>
-<!-- Login Screen -->
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <p class="subtitle">Mission Conference</p>
     <h1>선교대회 디자인팀</h1>
     <p>프로젝트 관리 허브에 로그인하세요</p>
     <button id="google-login-btn" onclick="handleLogin()">
-      <svg width="18" height="18" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Google 계정으로 로그인
     </button>
   </div>
 </div>
 
-<!-- App Container -->
 <div class="app-container" id="appContainer">
   <header class="header">
-    <div class="header-left">
-      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-      <span class="logo">✝️ 선교대회 디자인팀</span>
-    </div>
-    <div class="header-right">
-      <div class="user-info">
-        <img class="user-avatar" id="userAvatar" src="" alt="">
-        <span id="userName"></span>
-      </div>
-      <button class="btn-logout" onclick="handleLogout()">로그아웃</button>
-    </div>
+    <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><span class="logo">✝️ 선교대회 디자인팀</span></div>
+    <div class="header-right"><div class="user-info"><img class="user-avatar" id="userAvatar" src="" alt=""><span id="userName"></span></div><button class="btn-logout" onclick="handleLogout()">로그아웃</button></div>
   </header>
-
   <nav class="sidebar" id="sidebar">
-    <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
-      <span class="icon">🏠</span> 대시보드
-    </button>
-    <button class="nav-item" data-page="team" onclick="navigateTo('team')">
-      <span class="icon">👥</span> 팀원 & 역할
-    </button>
-    <button class="nav-item" data-page="projects" onclick="navigateTo('projects')">
-      <span class="icon">📋</span> 세부 프로젝트
-    </button>
-    <button class="nav-item" data-page="files" onclick="navigateTo('files')">
-      <span class="icon">📎</span> 파일 업로드
-    </button>
-    <button class="nav-item" data-page="meetings" onclick="navigateTo('meetings')">
-      <span class="icon">📝</span> 회의록
-    </button>
-    <button class="nav-item" data-page="budget" onclick="navigateTo('budget')">
-      <span class="icon">💰</span> 예산 및 집행현황
-    </button>
+    <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')"><span class="icon">🏠</span> 대시보드</button>
+    <button class="nav-item" data-page="team" onclick="navigateTo('team')"><span class="icon">👥</span> 팀원 & 역할</button>
+    <button class="nav-item" data-page="projects" onclick="navigateTo('projects')"><span class="icon">📋</span> 세부 프로젝트</button>
+    <button class="nav-item" data-page="files" onclick="navigateTo('files')"><span class="icon">📎</span> 파일 업로드</button>
+    <button class="nav-item" data-page="meetings" onclick="navigateTo('meetings')"><span class="icon">📝</span> 회의록</button>
+    <button class="nav-item" data-page="budget" onclick="navigateTo('budget')"><span class="icon">💰</span> 예산 및 집행현황</button>
   </nav>
-
   <main class="main-content">
-
-    <!-- Dashboard Page -->
+    <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <h2 class="page-title">대시보드</h2>
-      <!-- D-Day Banner -->
-      <div class="card dday-banner">
-        <div class="dday-info">
-          <div class="dday-event">📅 선교대회 일시: <strong>2026년 10월 18일 (일)</strong></div>
-          <div class="dday-count" id="ddayCount">D-00</div>
-        </div>
-      </div>
-      <!-- Stats (compact) -->
-      <div class="grid-3 stats-compact">
-        <div class="card stat-card-sm">
-          <div class="stat-number-sm" id="statTotal">7</div>
-          <div class="stat-label-sm">전체</div>
-        </div>
-        <div class="card stat-card-sm">
-          <div class="stat-number-sm" id="statProgress">0</div>
-          <div class="stat-label-sm">진행 중</div>
-        </div>
-        <div class="card stat-card-sm">
-          <div class="stat-number-sm" id="statDone">0</div>
-          <div class="stat-label-sm">완료</div>
-        </div>
-      </div>
+      <div class="card dday-banner"><div class="dday-info"><div class="dday-event">📅 선교대회 일시: <strong>2026년 10월 18일 (일)</strong></div><div class="dday-count" id="ddayCount">D-00</div></div></div>
+      <div class="grid-3 stats-compact"><div class="card stat-card-sm"><div class="stat-number-sm" id="statTotal">0</div><div class="stat-label-sm">전체</div></div><div class="card stat-card-sm"><div class="stat-number-sm" id="statProgress">0</div><div class="stat-label-sm">진행 중</div></div><div class="card stat-card-sm"><div class="stat-number-sm" id="statDone">0</div><div class="stat-label-sm">완료</div></div></div>
       <div class="grid-2" style="margin-top:16px">
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">프로젝트 진행상황</h3>
-          </div>
-          <div id="dashboardProgress"></div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">예산 현황</h3>
-          </div>
-          <div id="dashboardBudget">
-            <div class="budget-summary">
-              <span class="budget-total" id="budgetOverview">₩0 / ₩1,000,000</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" id="budgetBar" style="width:0%"></div>
-            </div>
-          </div>
-        </div>
+        <div class="card"><div class="card-header"><h3 class="card-title">프로젝트 진행상황</h3></div><div id="dashboardProgress"></div></div>
+        <div class="card"><div class="card-header"><h3 class="card-title">예산 현황</h3></div><div id="dashboardBudget"><div class="budget-summary"><span class="budget-total" id="budgetOverview">₩0 / ₩1,000,000</span></div><div class="progress-bar"><div class="progress-fill" id="budgetBar" style="width:0%"></div></div></div></div>
       </div>
-      <div class="card" style="margin-top:16px">
-        <div class="card-header"><h3 class="card-title">최근 회의록</h3></div>
-        <div id="dashboardMeetings"><p class="empty-state">회의록이 없습니다</p></div>
-      </div>
+      <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">최근 회의록</h3></div><div id="dashboardMeetings"><p class="empty-state">회의록이 없습니다</p></div></div>
     </div>
-
-    <!-- Team Page -->
+    <!-- TEAM -->
     <div class="page" id="page-team">
       <h2 class="page-title">팀원 & 역할</h2>
       <button class="btn btn-primary" onclick="openAddMemberModal()" style="margin-bottom:16px">+ 팀원 추가</button>
       <div id="teamList"></div>
     </div>
-
-    <!-- Projects Page -->
+    <!-- PROJECTS -->
     <div class="page" id="page-projects">
       <h2 class="page-title">세부 프로젝트</h2>
-      <button class="btn btn-primary" onclick="openNewProjectModal()" style="margin-bottom:16px">+ 새 프로젝트 추가</button>
-      <div style="margin-bottom:16px; display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm project-filter active" data-filter="all" onclick="filterProjects('all')">전체</button>
-        <button class="btn btn-secondary btn-sm project-filter" data-filter="todo" onclick="filterProjects('todo')">할 일</button>
-        <button class="btn btn-secondary btn-sm project-filter" data-filter="progress" onclick="filterProjects('progress')">진행 중</button>
-        <button class="btn btn-secondary btn-sm project-filter" data-filter="done" onclick="filterProjects('done')">완료</button>
-        <button class="btn btn-secondary btn-sm project-filter" data-filter="pending" onclick="filterProjects('pending')">보류</button>
+      <div class="filter-bar">
+        <button class="btn btn-secondary btn-sm active" data-filter="all" onclick="filterProjects('all')">전체</button>
+        <button class="btn btn-secondary btn-sm" data-filter="todo" onclick="filterProjects('todo')">할 일</button>
+        <button class="btn btn-secondary btn-sm" data-filter="progress" onclick="filterProjects('progress')">진행 중</button>
+        <button class="btn btn-secondary btn-sm" data-filter="done" onclick="filterProjects('done')">완료</button>
+        <button class="btn btn-secondary btn-sm" data-filter="pending" onclick="filterProjects('pending')">보류</button>
       </div>
+      <div class="filter-bar" id="categoryFilterBar"></div>
+      <button class="btn btn-secondary btn-sm" onclick="openAddCategoryModal()" style="margin-bottom:16px">+ 카테고리 추가</button>
       <div id="projectsList"></div>
     </div>
-
-    <!-- Files Page -->
+    <!-- FILES -->
     <div class="page" id="page-files">
       <h2 class="page-title">파일 업로드</h2>
       <div class="card">
-        <div class="card-header"><h3 class="card-title">파일 업로드</h3></div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px">
-          <select class="form-control" id="fileCategory" style="width:auto;">
-            <option value="">카테고리 선택</option>
-            <option value="포스터">포스터</option>
-            <option value="부스 디자인">부스 디자인</option>
-            <option value="굿즈-의류">굿즈-의류</option>
-            <option value="굿즈-기타">굿즈-기타</option>
-            <option value="리플렛">리플렛</option>
-            <option value="간판/현수막">간판/현수막</option>
-            <option value="기타">기타</option>
-          </select>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <select class="form-control" id="fileCategory" style="width:auto;"><option value="">카테고리 선택</option></select>
           <button class="btn btn-primary" onclick="uploadFile()">📁 파일 선택 & 업로드</button>
         </div>
-        <p style="font-size:0.8rem; color:var(--text-secondary);">Google Drive 공유 폴더에 업로드됩니다.</p>
       </div>
-      <div class="card" style="margin-top:16px">
-        <div class="card-header">
-          <h3 class="card-title">업로드된 파일</h3>
-          <button class="btn btn-secondary btn-sm" onclick="loadFiles()">새로고침</button>
-        </div>
-        <div id="filesList"><div class="loading"><div class="spinner"></div></div></div>
-      </div>
+      <div class="filter-bar" id="fileCategoryFilter"></div>
+      <div class="card" style="margin-top:8px"><div class="card-header"><h3 class="card-title">업로드된 파일</h3><button class="btn btn-secondary btn-sm" onclick="loadFiles()">새로고침</button></div><div id="filesList"></div></div>
     </div>
-
-    <!-- Meetings Page -->
+    <!-- MEETINGS -->
     <div class="page" id="page-meetings">
       <h2 class="page-title">회의록</h2>
       <button class="btn btn-primary" onclick="openMeetingModal()" style="margin-bottom:16px">+ 새 회의록 작성</button>
-      <div id="meetingsList"><div class="loading"><div class="spinner"></div></div></div>
+      <div id="meetingsList"></div>
     </div>
-
-    <!-- Budget Page -->
+    <!-- BUDGET -->
     <div class="page" id="page-budget">
       <h2 class="page-title">예산 및 집행현황</h2>
       <div class="card">
-        <div class="budget-summary">
-          <div>
-            <div class="budget-total" id="budgetTotalDisplay">₩0 / ₩1,000,000</div>
-            <div class="budget-used" id="budgetRemaining">잔여: ₩1,000,000</div>
-          </div>
-          <button class="btn btn-primary" onclick="openBudgetModal()">+ 지출 추가</button>
-        </div>
-        <div class="progress-bar" style="margin-bottom:20px">
-          <div class="progress-fill" id="budgetProgressBar" style="width:0%"></div>
-        </div>
+        <div class="budget-summary"><div><div class="budget-total" id="budgetTotalDisplay">₩0 / ₩1,000,000</div><div class="budget-used" id="budgetRemaining">잔여: ₩1,000,000</div></div><button class="btn btn-primary" onclick="openBudgetModal()">+ 지출 추가</button></div>
+        <div class="progress-bar" style="margin-bottom:20px"><div class="progress-fill" id="budgetProgressBar" style="width:0%"></div></div>
       </div>
-      <div class="card" style="margin-top:16px">
-        <div class="card-header"><h3 class="card-title">지출 내역</h3></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>날짜</th><th>카테고리</th><th>항목</th><th>금액</th><th>비고</th><th>등록자</th></tr></thead>
-            <tbody id="budgetTable"></tbody>
-          </table>
-        </div>
-        <div id="budgetEmpty" class="empty-state" style="display:none">
-          <div class="icon">💰</div><p>등록된 지출이 없습니다</p>
-        </div>
+      <div class="filter-bar" id="budgetCategoryFilter"></div>
+      <div class="card" style="margin-top:8px"><div class="card-header"><h3 class="card-title">지출 내역</h3></div>
+        <div class="table-wrap"><table><thead><tr><th>날짜</th><th>카테고리</th><th>항목</th><th>금액</th><th>상태</th><th>등록자</th><th>영수증</th><th>관리</th></tr></thead><tbody id="budgetTable"></tbody></table></div>
+        <div id="budgetEmpty" class="empty-state" style="display:none"><div class="icon">💰</div><p>등록된 지출이 없습니다</p></div>
       </div>
     </div>
   </main>
 </div>
 
-<!-- Modal: Meeting -->
-<div class="modal-overlay" id="meetingModal">
-  <div class="modal">
-    <h3 class="modal-title" id="meetingModalTitle">새 회의록</h3>
-    <div class="form-group">
-      <label>날짜</label>
-      <input type="date" class="form-control" id="meetingDate">
-    </div>
-    <div class="form-group">
-      <label>제목</label>
-      <input type="text" class="form-control" id="meetingTitle" placeholder="회의 제목">
-    </div>
-    <div class="form-group">
-      <label>참석자</label>
-      <div id="meetingAttendees" class="checkbox-group"></div>
-    </div>
-    <div class="form-group">
-      <label>내용</label>
-      <textarea class="form-control" id="meetingContent" rows="8" placeholder="회의 내용을 입력하세요..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('meetingModal')">취소</button>
-      <button class="btn btn-primary" onclick="saveMeeting()">저장</button>
-    </div>
-  </div>
-</div>
+<!-- MODALS -->
+<div class="modal-overlay" id="meetingModal"><div class="modal">
+  <h3 class="modal-title" id="meetingModalTitle">새 회의록</h3>
+  <input type="hidden" id="meetingEditId">
+  <div class="form-group"><label>날짜</label><input type="date" class="form-control" id="meetingDate"></div>
+  <div class="form-group"><label>제목</label><input type="text" class="form-control" id="meetingTitle" placeholder="회의 제목"></div>
+  <div class="form-group"><label>참석자</label><div id="meetingAttendees" class="checkbox-group"></div></div>
+  <div class="form-group"><label>내용</label><textarea class="form-control" id="meetingContent" rows="8" placeholder="회의 내용..."></textarea></div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('meetingModal')">취소</button><button class="btn btn-primary" onclick="saveMeeting()">저장</button></div>
+</div></div>
 
-<!-- Modal: Budget -->
-<div class="modal-overlay" id="budgetModal">
-  <div class="modal">
-    <h3 class="modal-title">지출 등록</h3>
-    <div class="form-group">
-      <label>날짜</label>
-      <input type="date" class="form-control" id="budgetDate">
-    </div>
-    <div class="form-group">
-      <label>카테고리</label>
-      <select class="form-control" id="budgetCategory">
-        <option value="포스터">포스터</option>
-        <option value="부스 디자인">부스 디자인</option>
-        <option value="굿즈-의류">굿즈-의류</option>
-        <option value="굿즈-기타">굿즈-기타</option>
-        <option value="리플렛">리플렛</option>
-        <option value="간판/현수막">간판/현수막</option>
-        <option value="인쇄">인쇄</option>
-        <option value="기타">기타</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>항목</label>
-      <input type="text" class="form-control" id="budgetItem" placeholder="예: 포스터 인쇄비">
-    </div>
-    <div class="form-group">
-      <label>금액 (원)</label>
-      <input type="number" class="form-control" id="budgetAmount" placeholder="50000">
-    </div>
-    <div class="form-group">
-      <label>비고</label>
-      <input type="text" class="form-control" id="budgetNote" placeholder="메모 (선택)">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('budgetModal')">취소</button>
-      <button class="btn btn-primary" onclick="saveBudget()">저장</button>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="budgetModal"><div class="modal">
+  <h3 class="modal-title" id="budgetModalTitle">지출 등록</h3>
+  <input type="hidden" id="budgetEditId">
+  <div class="form-group"><label>날짜</label><input type="date" class="form-control" id="budgetDate"></div>
+  <div class="form-group"><label>카테고리</label><select class="form-control" id="budgetCategoryInput"></select></div>
+  <div class="form-group"><label>항목</label><input type="text" class="form-control" id="budgetItem" placeholder="예: 포스터 인쇄비"></div>
+  <div class="form-group"><label>금액 (원)</label><input type="number" class="form-control" id="budgetAmount" placeholder="50000"></div>
+  <div class="form-group"><label>집행현황</label><select class="form-control" id="budgetStatus"><option value="지출예정">지출예정</option><option value="예산신청">예산신청</option><option value="지급완료">지급완료</option></select></div>
+  <div class="form-group"><label>등록자</label><input type="text" class="form-control" id="budgetCreatedBy" placeholder="이름"></div>
+  <div class="form-group"><label>비고</label><input type="text" class="form-control" id="budgetNote" placeholder="메모 (선택)"></div>
+  <div class="form-group"><label>영수증 첨부</label><button class="btn btn-secondary btn-sm" onclick="uploadReceipt()">📎 영수증 업로드</button><span id="receiptFileName" style="font-size:.8rem;margin-left:8px;color:var(--text-secondary)"></span><input type="hidden" id="budgetReceiptId"><input type="hidden" id="budgetReceiptUrl"></div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('budgetModal')">취소</button><button class="btn btn-primary" onclick="saveBudget()">저장</button></div>
+</div></div>
 
-<!-- Modal: Project -->
-<div class="modal-overlay" id="projectModal">
-  <div class="modal">
-    <h3 class="modal-title" id="projectModalTitle">프로젝트</h3>
-    <input type="hidden" id="projectEditId">
-    <div class="form-group" id="projectNameGroup">
-      <label>프로젝트 이름</label>
-      <input type="text" class="form-control" id="projectName" placeholder="예: 초대장 디자인">
-    </div>
-    <div class="form-group" id="projectCategoryGroup">
-      <label>카테고리</label>
-      <select class="form-control" id="projectCategorySelect">
-        <option value="포스터">포스터</option>
-        <option value="부스 디자인">부스 디자인</option>
-        <option value="굿즈-의류">굿즈-의류</option>
-        <option value="굿즈-기타">굿즈-기타</option>
-        <option value="리플렛">리플렛</option>
-        <option value="간판/현수막">간판/현수막</option>
-        <option value="기타">기타</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>상태</label>
-      <select class="form-control" id="projectStatus">
-        <option value="todo">할 일</option>
-        <option value="progress">진행 중</option>
-        <option value="done">완료</option>
-        <option value="pending">보류</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>담당자 (복수 선택 가능)</label>
-      <div id="projectAssigneeCheckboxes" class="checkbox-group"></div>
-    </div>
-    <div class="form-group">
-      <label>마감일</label>
-      <input type="date" class="form-control" id="projectDeadline">
-    </div>
-    <div class="form-group">
-      <label>메모</label>
-      <textarea class="form-control" id="projectNotes" rows="3" placeholder="프로젝트 메모..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('projectModal')">취소</button>
-      <button class="btn btn-primary" onclick="saveProject()">저장</button>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="projectModal"><div class="modal">
+  <h3 class="modal-title" id="projectModalTitle">프로젝트</h3>
+  <input type="hidden" id="projectEditId">
+  <div class="form-group" id="projectNameGroup"><label>프로젝트 이름</label><input type="text" class="form-control" id="projectName" placeholder="프로젝트 이름"></div>
+  <div class="form-group"><label>카테고리</label><select class="form-control" id="projectCategorySelect"></select></div>
+  <div class="form-group"><label>상태</label><select class="form-control" id="projectStatus"><option value="todo">할 일</option><option value="progress">진행 중</option><option value="done">완료</option><option value="pending">보류</option></select></div>
+  <div class="form-group"><label>담당자 (복수 선택)</label><div id="projectAssigneeCheckboxes" class="checkbox-group"></div></div>
+  <div class="form-group"><label>마감일</label><input type="date" class="form-control" id="projectDeadline"></div>
+  <div class="form-group"><label>상세내용</label><textarea class="form-control" id="projectNotes" rows="3" placeholder="상세내용..."></textarea></div>
+  <div class="form-group"><label>진행일자</label><input type="date" class="form-control" id="projectProgressDate"></div>
+  <div class="form-group"><label>진행상황 기록</label><textarea class="form-control" id="projectProgressLog" rows="4" placeholder="진행 업데이트를 기록하세요... (기존 기록은 유지됩니다)"></textarea></div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('projectModal')">취소</button><button class="btn btn-primary" onclick="saveProject()">저장</button></div>
+</div></div>
 
-<!-- Modal: Project Detail -->
-<div class="modal-overlay" id="projectDetailModal">
-  <div class="modal" style="max-width:600px;">
-    <h3 class="modal-title" id="projectDetailTitle">프로젝트 상세</h3>
-    <div id="projectDetailContent"></div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('projectDetailModal')">닫기</button>
-      <button class="btn btn-primary" id="projectDetailEditBtn" onclick="">수정</button>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="projectDetailModal"><div class="modal" style="max-width:600px">
+  <h3 class="modal-title" id="projectDetailTitle">프로젝트 상세</h3>
+  <div id="projectDetailContent"></div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('projectDetailModal')">닫기</button><button class="btn btn-primary" id="projectDetailEditBtn">수정</button></div>
+</div></div>
 
-<!-- Modal: Add Team Member -->
-<div class="modal-overlay" id="addMemberModal">
-  <div class="modal">
-    <h3 class="modal-title">팀원 추가</h3>
-    <div class="form-group">
-      <label>이름</label>
-      <input type="text" class="form-control" id="newMemberName" placeholder="이름">
-    </div>
-    <div class="form-group">
-      <label>소속</label>
-      <input type="text" class="form-control" id="newMemberDept" placeholder="소속 (예: 드림)">
-    </div>
-    <div class="form-group">
-      <label>역할</label>
-      <input type="text" class="form-control" id="newMemberRole" placeholder="역할 (예: 기획·작업)">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('addMemberModal')">취소</button>
-      <button class="btn btn-primary" onclick="addMember()">추가</button>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="addMemberModal"><div class="modal">
+  <h3 class="modal-title">팀원 추가</h3>
+  <div class="form-group"><label>이름</label><input type="text" class="form-control" id="newMemberName" placeholder="이름"></div>
+  <div class="form-group"><label>소속</label><input type="text" class="form-control" id="newMemberDept" placeholder="소속"></div>
+  <div class="form-group"><label>역할</label><input type="text" class="form-control" id="newMemberRole" placeholder="역할"></div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('addMemberModal')">취소</button><button class="btn btn-primary" onclick="addMember()">추가</button></div>
+</div></div>
 
-<!-- Modal: Edit Team Member -->
-<div class="modal-overlay" id="editMemberModal">
-  <div class="modal">
-    <h3 class="modal-title">역할 수정</h3>
-    <input type="hidden" id="editMemberIdx">
-    <div class="form-group">
-      <label>이름</label>
-      <input type="text" class="form-control" id="editMemberName" disabled>
-    </div>
-    <div class="form-group">
-      <label>소속</label>
-      <input type="text" class="form-control" id="editMemberDept">
-    </div>
-    <div class="form-group">
-      <label>역할</label>
-      <input type="text" class="form-control" id="editMemberRole">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('editMemberModal')">취소</button>
-      <button class="btn btn-primary" onclick="saveEditMember()">저장</button>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="editMemberModal"><div class="modal">
+  <h3 class="modal-title">역할 수정</h3><input type="hidden" id="editMemberIdx">
+  <div class="form-group"><label>이름</label><input type="text" class="form-control" id="editMemberName" disabled></div>
+  <div class="form-group"><label>소속</label><input type="text" class="form-control" id="editMemberDept"></div>
+  <div class="form-group"><label>역할</label><input type="text" class="form-control" id="editMemberRole"></div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('editMemberModal')">취소</button><button class="btn btn-primary" onclick="saveEditMember()">저장</button></div>
+</div></div>
 
-<!-- Toast -->
+<div class="modal-overlay" id="addCategoryModal"><div class="modal">
+  <h3 class="modal-title">카테고리 추가</h3>
+  <div class="form-group"><label>카테고리 이름</label><input type="text" class="form-control" id="newCategoryName" placeholder="예: 초대장"></div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('addCategoryModal')">취소</button><button class="btn btn-primary" onclick="addCategory()">추가</button></div>
+</div></div>
+
 <div class="toast" id="toast"></div>
-
-<!-- Google APIs -->
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://apis.google.com/js/api.js"></script>
 
-<style>
-/* Login */
-.login-screen {
-  display:flex; align-items:center; justify-content:center; min-height:100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-.login-card {
-  background:var(--surface); border-radius:16px; padding:48px; text-align:center;
-  box-shadow:var(--shadow-lg); max-width:400px; width:90%;
-}
-.login-card h1 { font-size:1.5rem; margin-bottom:8px; }
-.login-card p { color:var(--text-secondary); margin-bottom:32px; font-size:0.9rem; }
-.login-card .subtitle { font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px; }
-#google-login-btn {
-  display:inline-flex; align-items:center; gap:10px; padding:12px 24px;
-  background:var(--surface); border:1px solid var(--border); border-radius:8px;
-  font-size:0.95rem; cursor:pointer; transition:var(--transition); font-family:inherit;
-}
-#google-login-btn:hover { background:var(--bg); box-shadow:var(--shadow); }
-
-/* App Layout */
-.app-container { display:none; grid-template-columns:var(--sidebar-width) 1fr; grid-template-rows:var(--header-height) 1fr; min-height:100vh; }
-.app-container.active { display:grid; }
-.header { grid-column:1/-1; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 24px; z-index:100; }
-.header-left { display:flex; align-items:center; gap:12px; }
-.header-left .logo { font-weight:700; font-size:1.1rem; }
-.header-right { display:flex; align-items:center; gap:16px; }
-.user-info { display:flex; align-items:center; gap:10px; font-size:0.85rem; }
-.user-avatar { width:32px; height:32px; border-radius:50%; object-fit:cover; }
-.btn-logout { padding:6px 14px; background:none; border:1px solid var(--border); border-radius:6px; font-size:0.8rem; cursor:pointer; transition:var(--transition); font-family:inherit; color:var(--text-secondary); }
-.btn-logout:hover { background:var(--bg); color:var(--text); }
-
-/* Sidebar */
-.sidebar { background:var(--surface); border-right:1px solid var(--border); padding:20px 12px; overflow-y:auto; }
-.nav-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; cursor:pointer; font-size:0.9rem; transition:var(--transition); color:var(--text-secondary); margin-bottom:2px; border:none; background:none; width:100%; text-align:left; font-family:inherit; }
-.nav-item:hover { background:var(--bg); color:var(--text); }
-.nav-item.active { background:var(--accent-light); color:var(--accent); font-weight:600; }
-.nav-item .icon { font-size:1.1rem; width:24px; text-align:center; }
-
-/* Main */
-.main-content { padding:28px; overflow-y:auto; max-height:calc(100vh - var(--header-height)); }
-.page { display:none; animation:fadeIn 0.2s ease; }
-.page.active { display:block; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-.page-title { font-size:1.4rem; font-weight:700; margin-bottom:24px; }
-
-/* Cards */
-.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; box-shadow:var(--shadow); }
-.card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-.card-title { font-size:1rem; font-weight:600; }
-
-/* Grid */
-.grid-2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; }
-.grid-3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
-
-/* D-Day Banner */
-.dday-banner { background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#fff; padding:20px 24px; }
-.dday-info { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
-.dday-event { font-size:0.95rem; }
-.dday-count { font-size:1.8rem; font-weight:800; }
-
-/* Stats compact */
-.stats-compact { margin-top:12px; }
-.stat-card-sm { text-align:center; padding:14px 12px; }
-.stat-number-sm { font-size:1.4rem; font-weight:700; color:var(--accent); }
-.stat-label-sm { font-size:0.75rem; color:var(--text-secondary); margin-top:2px; }
-
-/* Badges */
-.badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:500; }
-.badge-todo { background:#fee2e2; color:#dc2626; }
-.badge-progress { background:#fef3c7; color:#d97706; }
-.badge-done { background:#d1fae5; color:#059669; }
-.badge-pending { background:#f3f4f6; color:#6b7280; }
-
-/* Progress Bar */
-.progress-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:8px; }
-.progress-fill { height:100%; background:var(--accent); border-radius:3px; transition:width 0.3s ease; }
-
-/* Buttons */
-.btn { padding:8px 16px; border-radius:6px; font-size:0.85rem; cursor:pointer; border:none; transition:var(--transition); font-family:inherit; font-weight:500; }
-.btn-primary { background:var(--accent); color:#fff; }
-.btn-primary:hover { background:var(--accent-hover); }
-.btn-secondary { background:var(--bg); color:var(--text); border:1px solid var(--border); }
-.btn-secondary:hover { background:var(--border); }
-.btn-sm { padding:5px 10px; font-size:0.78rem; }
-.btn-danger { background:#fee2e2; color:#dc2626; }
-.btn-danger:hover { background:#fca5a5; }
-
-/* Forms */
-.form-group { margin-bottom:14px; }
-.form-group label { display:block; font-size:0.82rem; font-weight:500; margin-bottom:5px; color:var(--text-secondary); }
-.form-control { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:6px; font-size:0.9rem; font-family:inherit; transition:var(--transition); }
-.form-control:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,70,229,0.1); }
-textarea.form-control { resize:vertical; min-height:80px; }
-
-/* Checkbox group */
-.checkbox-group { display:flex; flex-wrap:wrap; gap:8px; }
-.checkbox-group label { display:inline-flex; align-items:center; gap:5px; font-size:0.85rem; cursor:pointer; padding:4px 10px; border:1px solid var(--border); border-radius:6px; transition:var(--transition); }
-.checkbox-group label:has(input:checked) { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
-.checkbox-group input[type="checkbox"] { width:14px; height:14px; }
-
-/* Table */
-.table-wrap { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
-th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--border); }
-th { font-weight:600; color:var(--text-secondary); font-size:0.78rem; text-transform:uppercase; }
-tr:hover td { background:var(--bg); }
-
-/* Modal */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; padding:20px; }
-.modal-overlay.active { display:flex; }
-.modal { background:var(--surface); border-radius:12px; padding:28px; width:100%; max-width:520px; max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
-.modal-title { font-size:1.1rem; font-weight:700; margin-bottom:20px; }
-.modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
-
-/* Toast */
-.toast { position:fixed; bottom:24px; right:24px; background:var(--text); color:#fff; padding:12px 20px; border-radius:8px; font-size:0.85rem; z-index:2000; opacity:0; transform:translateY(10px); transition:var(--transition); }
-.toast.show { opacity:1; transform:translateY(0); }
-
-/* Budget */
-.budget-summary { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; flex-wrap:wrap; }
-.budget-total { font-size:1.3rem; font-weight:700; }
-.budget-used { color:var(--text-secondary); font-size:0.85rem; }
-
-/* Team */
-.team-row { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); }
-.team-row:last-child { border-bottom:none; }
-.team-left { display:flex; align-items:center; gap:12px; }
-.member-avatar { width:38px; height:38px; border-radius:50%; background:var(--accent-light); display:flex; align-items:center; justify-content:center; font-weight:600; color:var(--accent); font-size:0.85rem; flex-shrink:0; }
-.member-info h4 { font-size:0.9rem; font-weight:600; }
-.member-info p { font-size:0.8rem; color:var(--text-secondary); }
-
-/* File item */
-.file-item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); gap:8px; }
-.file-item:last-child { border-bottom:none; }
-.file-info { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
-.file-icon { font-size:1.3rem; flex-shrink:0; }
-.file-btns { display:flex; gap:6px; flex-shrink:0; }
-
-/* Meeting */
-.meeting-item { border-left:3px solid var(--accent); padding-left:14px; margin-bottom:16px; }
-.meeting-date { font-size:0.78rem; color:var(--text-secondary); }
-.meeting-title { font-weight:600; margin:4px 0; }
-.meeting-content { font-size:0.85rem; color:var(--text-secondary); white-space:pre-wrap; }
-.meeting-attendees { font-size:0.78rem; color:var(--accent); margin-top:4px; }
-
-/* Project card clickable */
-.project-card { cursor:pointer; transition:var(--transition); }
-.project-card:hover { border-color:var(--accent); box-shadow:0 2px 8px rgba(79,70,229,0.1); }
-
-/* Loading */
-.loading { text-align:center; padding:40px; color:var(--text-secondary); }
-.spinner { display:inline-block; width:24px; height:24px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
-@keyframes spin { to{transform:rotate(360deg)} }
-.empty-state { text-align:center; padding:40px 20px; color:var(--text-secondary); }
-.empty-state .icon { font-size:2.5rem; margin-bottom:12px; }
-
-/* Mobile */
-.menu-toggle { display:none; background:none; border:none; font-size:1.3rem; cursor:pointer; padding:4px; }
-@media(max-width:768px) {
-  .app-container.active { grid-template-columns:1fr; }
-  .sidebar { position:fixed; left:-280px; top:var(--header-height); bottom:0; width:260px; z-index:200; transition:left 0.3s ease; box-shadow:var(--shadow-lg); }
-  .sidebar.open { left:0; }
-  .menu-toggle { display:block; }
-  .main-content { padding:16px; max-height:calc(100vh - var(--header-height)); }
-  .grid-2, .grid-3 { grid-template-columns:1fr; }
-  .dday-info { flex-direction:column; text-align:center; }
-}
-</style>
-
 <script>
-// ═══════════════════════════════════════════════════════
-// CONFIG - 여기에 실제 값 입력!
-// ═══════════════════════════════════════════════════════
 const CONFIG = {
   CLIENT_ID: '888123442632-60hs7clfdq69b9edkq1o97pge5us34pt.apps.googleusercontent.com',
   API_KEY: 'AIzaSyAQpbpM7K9HvrFUJkNANer_ivB_fZScdF8',
   SHEET_ID: '1SpktgZYvQPF0WhIiZlZIKV9tSydIFo-TIBjPmPfeS5E',
   DRIVE_FOLDER_ID: '1euU2KjjHouGSakRcruXyC5x7El0upn6v',
   SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-  DISCOVERY_DOCS: [
-    'https://sheets.googleapis.com/$discovery/rest?version=v4',
-    'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
-  ]
+  DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4','https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
 };
 
-// ═══════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════
-const state = {
-  user: null,
-  tokenClient: null,
-  accessToken: null,
-  gapiInited: false,
-  gisInited: false,
-  currentPage: 'dashboard',
-  projects: [],
-  meetings: [],
-  budget: [],
-  files: [],
-  team: [
-    { name: '강민구', dept: '드림', role: '총괄·기획·작업' },
-    { name: '김하늘', dept: '미션', role: '기획' },
-    { name: '정서현', dept: '유바디', role: '기획·작업' },
-    { name: '정서린', dept: '비전', role: '기획·작업(서브)' },
-    { name: '유윤서', dept: '드림', role: '기획' }
+const state = { user:null, tokenClient:null, accessToken:null, gapiInited:false, gisInited:false,
+  currentPage:'dashboard', projects:[], meetings:[], budget:[], files:[], team:[], categories:[],
+  projectFilter:'all', categoryFilter:'all', fileCategoryFilter:'all', budgetCategoryFilter:'all',
+  defaultTeam:[
+    {name:'강민구',dept:'드림',role:'총괄·기획·작업'},{name:'김하늘',dept:'미션',role:'기획'},
+    {name:'정서현',dept:'유바디',role:'기획·작업'},{name:'정서린',dept:'비전',role:'기획·작업(서브)'},
+    {name:'유윤서',dept:'드림',role:'기획'}
   ],
-  defaultProjects: [
-    { id:'1', name:'포스터', status:'todo', assignee:'', deadline:'2026-09-01', notes:'주제 1-3안 중 택 or 새 제안 (빠른 컨펌 필요)', category:'포스터' },
-    { id:'2', name:'부스 디자인 (메인: 타지키스탄)', status:'todo', assignee:'', deadline:'', notes:'수익금 전액 선교헌금', category:'부스 디자인' },
-    { id:'3', name:'부스 디자인 (서브: 니즈니 교회)', status:'todo', assignee:'', deadline:'', notes:'별도 부스 마련', category:'부스 디자인' },
-    { id:'4', name:'굿즈 - 의류', status:'todo', assignee:'', deadline:'', notes:'판매/수익 목적, 세련되고 과하지 않은 디자인', category:'굿즈-의류' },
-    { id:'5', name:'굿즈 - 기타', status:'todo', assignee:'', deadline:'', notes:'항목 의논 필요', category:'굿즈-기타' },
-    { id:'6', name:'리플렛', status:'pending', assignee:'', deadline:'', notes:'진행 여부 미정 (작업량 많음, 작년에 많이 남음)', category:'리플렛' },
-    { id:'7', name:'간판/현수막', status:'todo', assignee:'', deadline:'', notes:'외부 장년부 운영 항목', category:'간판/현수막' }
+  defaultCategories:['포스터','부스 디자인','굿즈-의류','굿즈-기타','리플렛','간판/현수막','인쇄','기타'],
+  defaultProjects:[
+    {id:'1',name:'포스터',status:'todo',assignee:'',deadline:'2026-09-01',notes:'주제 1-3안 중 택 or 새 제안',category:'포스터',progressDate:'',progressLog:''},
+    {id:'2',name:'부스 디자인 (메인: 타지키스탄)',status:'todo',assignee:'',deadline:'',notes:'수익금 전액 선교헌금',category:'부스 디자인',progressDate:'',progressLog:''},
+    {id:'3',name:'부스 디자인 (서브: 니즈니 교회)',status:'todo',assignee:'',deadline:'',notes:'별도 부스 마련',category:'부스 디자인',progressDate:'',progressLog:''},
+    {id:'4',name:'굿즈 - 의류',status:'todo',assignee:'',deadline:'',notes:'판매/수익 목적',category:'굿즈-의류',progressDate:'',progressLog:''},
+    {id:'5',name:'굿즈 - 기타',status:'todo',assignee:'',deadline:'',notes:'항목 의논 필요',category:'굿즈-기타',progressDate:'',progressLog:''},
+    {id:'6',name:'리플렛',status:'pending',assignee:'',deadline:'',notes:'진행 여부 미정',category:'리플렛',progressDate:'',progressLog:''},
+    {id:'7',name:'간판/현수막',status:'todo',assignee:'',deadline:'',notes:'외부 장년부 운영 항목',category:'간판/현수막',progressDate:'',progressLog:''}
   ]
 };
 
-// ═══════════════════════════════════════════════════════
-// D-DAY CALCULATOR
-// ═══════════════════════════════════════════════════════
-function updateDday() {
-  const eventDate = new Date('2026-10-18T00:00:00+09:00');
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diff = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
-  const el = document.getElementById('ddayCount');
-  if (diff > 0) el.textContent = `D-${diff}`;
-  else if (diff === 0) el.textContent = 'D-DAY!';
-  else el.textContent = `D+${Math.abs(diff)}`;
-}
+// D-DAY
+function updateDday(){const e=new Date('2026-10-18T00:00:00+09:00'),n=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()),d=Math.ceil((e-t)/(864e5)),el=document.getElementById('ddayCount');el.textContent=d>0?`D-${d}`:d===0?'D-DAY!':`D+${Math.abs(d)}`;}
 
-// ═══════════════════════════════════════════════════════
-// GOOGLE API INIT
-// ═══════════════════════════════════════════════════════
-function gapiLoaded() { gapi.load('client', initializeGapiClient); }
+// GOOGLE API
+function gapiLoaded(){gapi.load('client',initGapi)}
+async function initGapi(){try{await gapi.client.init({apiKey:CONFIG.API_KEY,discoveryDocs:CONFIG.DISCOVERY_DOCS});state.gapiInited=true;maybeEnable()}catch(e){console.error('GAPI:',e)}}
+function gisLoaded(){state.tokenClient=google.accounts.oauth2.initTokenClient({client_id:CONFIG.CLIENT_ID,scope:CONFIG.SCOPES,callback:handleToken});state.gisInited=true;maybeEnable()}
+function maybeEnable(){if(state.gapiInited&&state.gisInited){const s=localStorage.getItem('user_info');if(s){state.user=JSON.parse(s);state.tokenClient.requestAccessToken({prompt:''})}}}
+function handleToken(r){if(r.error){if(r.error==='interaction_required'){localStorage.removeItem('user_info');state.user=null}return}state.accessToken=r.access_token;gapi.client.setToken({access_token:r.access_token});if(!state.user){fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:`Bearer ${r.access_token}`}}).then(r=>r.json()).then(i=>{state.user={name:i.name,email:i.email,picture:i.picture};localStorage.setItem('user_info',JSON.stringify(state.user));showApp()})}else showApp()}
+function handleLogin(){if(!state.tokenClient){showToast('로드 중...');return}state.tokenClient.requestAccessToken({prompt:'consent'})}
+function handleLogout(){if(state.accessToken)google.accounts.oauth2.revoke(state.accessToken);state.user=null;state.accessToken=null;localStorage.removeItem('user_info');document.getElementById('loginScreen').style.display='flex';document.getElementById('appContainer').classList.remove('active')}
+function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appContainer').classList.add('active');document.getElementById('userName').textContent=state.user.name;document.getElementById('userAvatar').src=state.user.picture||'';updateDday();loadAllData()}
+function navigateTo(p){state.currentPage=p;document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('active',e.dataset.page===p));document.querySelectorAll('.page').forEach(e=>e.classList.toggle('active',e.id===`page-${p}`));document.getElementById('sidebar').classList.remove('open')}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open')}
 
-async function initializeGapiClient() {
-  try {
-    await gapi.client.init({ apiKey: CONFIG.API_KEY, discoveryDocs: CONFIG.DISCOVERY_DOCS });
-    state.gapiInited = true;
-    console.log('GAPI initialized');
-    maybeEnableButtons();
-  } catch(err) { console.error('GAPI init error:', err); showToast('API 초기화 실패: ' + (err.message || err.error || 'unknown')); }
-}
-
-function gisLoaded() {
-  state.tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CONFIG.CLIENT_ID,
-    scope: CONFIG.SCOPES,
-    callback: handleTokenResponse,
-  });
-  state.gisInited = true;
-  console.log('GIS initialized');
-  maybeEnableButtons();
-}
-
-function maybeEnableButtons() {
-  if (state.gapiInited && state.gisInited) {
-    const stored = localStorage.getItem('user_info');
-    if (stored) {
-      state.user = JSON.parse(stored);
-      // Silent token request (no popup)
-      state.tokenClient.requestAccessToken({ prompt: '' });
-    }
-  }
-}
-
-function handleTokenResponse(resp) {
-  if (resp.error) {
-    console.error('Token error:', resp);
-    // If silent failed, user needs to login again
-    if (resp.error === 'interaction_required' || resp.error === 'consent_required') {
-      localStorage.removeItem('user_info');
-      state.user = null;
-    }
-    return;
-  }
-  state.accessToken = resp.access_token;
-  console.log('Token acquired');
-  
-  // Set token on gapi client
-  gapi.client.setToken({ access_token: resp.access_token });
-
-  if (!state.user) {
-    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${resp.access_token}` }
-    }).then(r=>r.json()).then(info => {
-      state.user = { name:info.name, email:info.email, picture:info.picture };
-      localStorage.setItem('user_info', JSON.stringify(state.user));
-      showApp();
-    });
-  } else { showApp(); }
-}
-
-// ═══════════════════════════════════════════════════════
-// LOGIN / LOGOUT
-// ═══════════════════════════════════════════════════════
-function handleLogin() {
-  if (!state.tokenClient) { showToast('Google API 로드 중... 잠시 후 다시 시도하세요.'); return; }
-  state.tokenClient.requestAccessToken({ prompt:'consent' });
-}
-function handleLogout() {
-  if (state.accessToken) google.accounts.oauth2.revoke(state.accessToken);
-  state.user = null; state.accessToken = null;
-  localStorage.removeItem('user_info');
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('appContainer').classList.remove('active');
-}
-function showApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appContainer').classList.add('active');
-  document.getElementById('userName').textContent = state.user.name;
-  document.getElementById('userAvatar').src = state.user.picture || '';
-  updateDday();
-  loadAllData();
-}
-
-// ═══════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════
-function navigateTo(page) {
-  state.currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
-  document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
-  document.getElementById('sidebar').classList.remove('open');
-}
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-
-// ═══════════════════════════════════════════════════════
-// SHEETS API HELPERS
-// ═══════════════════════════════════════════════════════
-async function sheetsGet(range) {
-  try {
-    const r = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId:CONFIG.SHEET_ID, range });
-    return r.result.values || [];
-  } catch(e) {
-    console.error(`Read ${range}:`, e);
-    if (e.result && e.result.error) {
-      const err = e.result.error;
-      if (err.code === 403) console.error('권한 없음 - Sheets API가 활성화되어 있는지, 시트 공유 권한을 확인하세요');
-      if (err.code === 404) console.error('시트를 찾을 수 없음 - SHEET_ID 또는 시트 탭 이름을 확인하세요');
-    }
-    return [];
-  }
-}
-
-async function sheetsAppend(range, values) {
-  try {
-    const result = await gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: CONFIG.SHEET_ID, range,
-      valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS',
-      resource: { values }
-    });
-    console.log('Append success:', range, result);
-    return true;
-  } catch(e) {
-    console.error(`Append ${range}:`, e);
-    if (e.result && e.result.error) {
-      const err = e.result.error;
-      if (err.code === 403) {
-        showToast('권한 오류: 시트에 편집 권한이 있는지 확인하세요');
-      } else if (err.code === 404) {
-        showToast('시트를 찾을 수 없습니다. 시트 탭 이름을 확인해주세요 (meetings, budget 등)');
-      } else if (err.code === 400) {
-        showToast('요청 오류: 시트 탭 이름이 정확한지 확인하세요');
-      } else {
-        showToast(`저장 실패 (${err.code}): ${err.message}`);
-      }
-    } else {
-      showToast('저장 실패: 네트워크 또는 인증 오류');
-    }
-    return false;
-  }
-}
-
-async function sheetsUpdate(range, values) {
-  try {
-    await gapi.client.sheets.spreadsheets.values.update({
-      spreadsheetId: CONFIG.SHEET_ID, range,
-      valueInputOption: 'USER_ENTERED', resource: { values }
-    });
-    return true;
-  } catch(e) {
-    console.error(`Update ${range}:`, e);
-    if (e.result && e.result.error) {
-      showToast(`업데이트 실패 (${e.result.error.code}): ${e.result.error.message}`);
-    } else {
-      showToast('업데이트 실패');
-    }
-    return false;
-  }
-}
+// SHEETS HELPERS
+async function sheetsGet(range){try{const r=await gapi.client.sheets.spreadsheets.values.get({spreadsheetId:CONFIG.SHEET_ID,range});return r.result.values||[]}catch(e){console.error(`Get ${range}:`,e);return[]}}
+async function sheetsAppend(range,values){try{await gapi.client.sheets.spreadsheets.values.append({spreadsheetId:CONFIG.SHEET_ID,range,valueInputOption:'USER_ENTERED',insertDataOption:'INSERT_ROWS',resource:{values}});return true}catch(e){console.error(`Append ${range}:`,e);showToast('저장 실패: '+(e.result?.error?.message||''));return false}}
+async function sheetsUpdate(range,values){try{await gapi.client.sheets.spreadsheets.values.update({spreadsheetId:CONFIG.SHEET_ID,range,valueInputOption:'USER_ENTERED',resource:{values}});return true}catch(e){console.error(`Update ${range}:`,e);showToast('업데이트 실패');return false}}
+async function sheetsDelete(sheetName,rowIdx){try{const r=await gapi.client.sheets.spreadsheets.get({spreadsheetId:CONFIG.SHEET_ID});const sheet=r.result.sheets.find(s=>s.properties.title===sheetName);if(!sheet)return false;await gapi.client.sheets.spreadsheets.batchUpdate({spreadsheetId:CONFIG.SHEET_ID,resource:{requests:[{deleteDimension:{range:{sheetId:sheet.properties.sheetId,dimension:'ROWS',startIndex:rowIdx,endIndex:rowIdx+1}}}]}});return true}catch(e){console.error('Delete row:',e);return false}}
 </script>
 
 <script>
-// ═══════════════════════════════════════════════════════
 // DATA LOADING
-// ═══════════════════════════════════════════════════════
-async function loadAllData() {
-  await Promise.all([loadTeam(), loadProjects(), loadMeetings(), loadBudget(), loadFiles()]);
-  renderDashboard();
-  renderTeam();
+async function loadAllData(){await Promise.all([loadTeam(),loadCategories(),loadProjects(),loadMeetings(),loadBudget(),loadFiles()]);renderAll()}
+async function loadTeam(){const rows=await sheetsGet('team!A2:C');if(rows.length===0){state.team=[...state.defaultTeam];await sheetsAppend('team!A:C',state.defaultTeam.map(m=>[m.name,m.dept,m.role]))}else{state.team=rows.map(r=>({name:r[0]||'',dept:r[1]||'',role:r[2]||''}))}}
+async function loadCategories(){const rows=await sheetsGet('categories!A2:A');if(rows.length===0){state.categories=[...state.defaultCategories];await sheetsAppend('categories!A:A',state.defaultCategories.map(c=>[c]))}else{state.categories=rows.map(r=>r[0]).filter(Boolean)}}
+async function loadProjects(){const rows=await sheetsGet('projects!A2:I');if(rows.length===0){state.projects=[...state.defaultProjects];await sheetsAppend('projects!A:I',state.defaultProjects.map(p=>[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category,p.progressDate,p.progressLog]))}else{state.projects=rows.map(r=>({id:r[0]||'',name:r[1]||'',status:r[2]||'todo',assignee:r[3]||'',deadline:r[4]||'',notes:r[5]||'',category:r[6]||'',progressDate:r[7]||'',progressLog:r[8]||''}))}}
+async function loadMeetings(){const rows=await sheetsGet('meetings!A2:G');state.meetings=rows.map(r=>({id:r[0]||'',date:r[1]||'',title:r[2]||'',content:r[3]||'',author:r[4]||'',createdAt:r[5]||'',attendees:r[6]||''})).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
+async function loadBudget(){const rows=await sheetsGet('budget!A2:J');state.budget=rows.map(r=>({id:r[0]||'',category:r[1]||'',item:r[2]||'',amount:parseInt(r[3])||0,date:r[4]||'',note:r[5]||'',createdBy:r[6]||'',status:r[7]||'지출예정',receiptId:r[8]||'',receiptUrl:r[9]||''}))}
+async function loadFiles(){const rows=await sheetsGet('files!A2:G');state.files=rows.map(r=>({id:r[0]||'',name:r[1]||'',driveId:r[2]||'',url:r[3]||'',uploadedBy:r[4]||'',uploadedAt:r[5]||'',category:r[6]||''}))}
+function renderAll(){renderDashboard();renderTeam();renderCategoryFilters();renderProjects();renderFiles();renderMeetings();renderBudget()}
+
+// CATEGORIES
+function renderCategoryFilters(){
+  const catBtns=`<button class="btn btn-secondary btn-sm ${state.categoryFilter==='all'?'active':''}" onclick="filterByCategory('all')">전체</button>`+state.categories.map(c=>`<button class="btn btn-secondary btn-sm ${state.categoryFilter===c?'active':''}" onclick="filterByCategory('${esc(c)}')">${esc(c)}</button>`).join('');
+  document.getElementById('categoryFilterBar').innerHTML=catBtns;
+  // File category dropdown & filter
+  const fileCatSel=document.getElementById('fileCategory');
+  fileCatSel.innerHTML='<option value="">카테고리 선택</option>'+state.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  const fileCatBtns=`<button class="btn btn-secondary btn-sm ${state.fileCategoryFilter==='all'?'active':''}" onclick="filterFiles('all')">전체</button>`+state.categories.map(c=>`<button class="btn btn-secondary btn-sm ${state.fileCategoryFilter===c?'active':''}" onclick="filterFiles('${esc(c)}')">${esc(c)}</button>`).join('');
+  document.getElementById('fileCategoryFilter').innerHTML=fileCatBtns;
+  // Budget category filter
+  const budCatBtns=`<button class="btn btn-secondary btn-sm ${state.budgetCategoryFilter==='all'?'active':''}" onclick="filterBudget('all')">전체</button>`+state.categories.map(c=>`<button class="btn btn-secondary btn-sm ${state.budgetCategoryFilter===c?'active':''}" onclick="filterBudget('${esc(c)}')">${esc(c)}</button>`).join('');
+  document.getElementById('budgetCategoryFilter').innerHTML=budCatBtns;
+  // Project category select
+  document.getElementById('projectCategorySelect').innerHTML=state.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  // Budget category select
+  document.getElementById('budgetCategoryInput').innerHTML=state.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+function openAddCategoryModal(){document.getElementById('newCategoryName').value='';openModal('addCategoryModal')}
+async function addCategory(){const name=document.getElementById('newCategoryName').value.trim();if(!name){showToast('이름을 입력하세요');return}if(state.categories.includes(name)){showToast('이미 존재하는 카테고리');return}const ok=await sheetsAppend('categories!A:A',[[name]]);if(ok){state.categories.push(name);renderCategoryFilters();showToast(`'${name}' 카테고리 추가됨`)}closeModal('addCategoryModal')}
+function filterByCategory(c){state.categoryFilter=c;renderCategoryFilters();renderProjects()}
+function filterFiles(c){state.fileCategoryFilter=c;renderCategoryFilters();renderFiles()}
+function filterBudget(c){state.budgetCategoryFilter=c;renderCategoryFilters();renderBudget()}
+
+// DASHBOARD
+function renderDashboard(){
+  const t=state.projects.length,p=state.projects.filter(x=>x.status==='progress').length,d=state.projects.filter(x=>x.status==='done').length;
+  document.getElementById('statTotal').textContent=t;document.getElementById('statProgress').textContent=p;document.getElementById('statDone').textContent=d;
+  document.getElementById('dashboardProgress').innerHTML=state.projects.map(pr=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><span style="font-size:.85rem">${esc(pr.name)}</span>${pr.assignee?`<span style="font-size:.72rem;color:var(--text-secondary);margin-left:6px">👤${esc(pr.assignee)}</span>`:''}</div><span class="badge badge-${pr.status}">${statusLabel(pr.status)}</span></div>`).join('')||'<p class="empty-state">프로젝트 없음</p>';
+  const total=1000000,used=state.budget.reduce((s,b)=>s+b.amount,0),pct=Math.min(used/total*100,100);
+  document.getElementById('budgetOverview').textContent=`₩${used.toLocaleString()} / ₩${total.toLocaleString()}`;document.getElementById('budgetBar').style.width=pct+'%';
+  const recent=state.meetings.slice(0,3);document.getElementById('dashboardMeetings').innerHTML=recent.length?recent.map(m=>`<div style="border-left:3px solid var(--accent);padding:6px 12px;margin-bottom:8px"><div style="font-size:.82rem;color:var(--text-secondary)">${m.date} ${getDayName(m.date)}</div><div style="font-weight:600;font-size:.9rem">${esc(m.title)}</div></div>`).join(''):'<p class="empty-state">회의록이 없습니다</p>';
 }
 
-async function loadTeam() {
-  const rows = await sheetsGet('team!A2:C');
-  if (rows.length === 0) {
-    // 초기 데이터 시트에 저장
-    const values = state.team.map(m => [m.name, m.dept, m.role]);
-    await sheetsUpdate('team!A1:C1', [['name', 'dept', 'role']]);
-    await sheetsAppend('team!A:C', values);
-  } else {
-    state.team = rows.map(row => ({
-      name: row[0] || '', dept: row[1] || '', role: row[2] || ''
-    }));
-  }
+// TEAM
+function renderTeam(){
+  document.getElementById('teamList').innerHTML=state.team.map((m,i)=>{
+    const myProjects=state.projects.filter(p=>p.status==='progress'&&p.assignee.includes(m.name)).map(p=>p.name);
+    return`<div class="card team-row"><div class="team-left"><div class="member-avatar">${m.name.charAt(0)}</div><div class="member-info"><h4>${esc(m.name)}</h4><p>${esc(m.dept)} · ${esc(m.role)}</p>${myProjects.length?`<div class="member-projects">진행중: ${myProjects.map(n=>esc(n)).join(', ')}</div>`:''}</div></div><button class="btn btn-secondary btn-sm" onclick="openEditMember(${i})">수정</button></div>`}).join('');
 }
-
-async function loadProjects() {
-  const rows = await sheetsGet('projects!A2:G');
-  if (rows.length === 0) {
-    state.projects = [...state.defaultProjects];
-  } else {
-    state.projects = rows.map(row => ({
-      id:row[0]||'', name:row[1]||'', status:row[2]||'todo',
-      assignee:row[3]||'', deadline:row[4]||'', notes:row[5]||'', category:row[6]||''
-    }));
-  }
-  renderProjects();
-}
-
-async function loadMeetings() {
-  const rows = await sheetsGet('meetings!A2:G');
-  state.meetings = rows.map(row => ({
-    id:row[0]||'', date:row[1]||'', title:row[2]||'',
-    content:row[3]||'', author:row[4]||'', createdAt:row[5]||'', attendees:row[6]||''
-  })).sort((a,b) => (b.date||'').localeCompare(a.date||''));
-  renderMeetings();
-}
-
-async function loadBudget() {
-  const rows = await sheetsGet('budget!A2:G');
-  state.budget = rows.map(row => ({
-    id:row[0]||'', category:row[1]||'', item:row[2]||'',
-    amount:parseInt(row[3])||0, date:row[4]||'', note:row[5]||'', createdBy:row[6]||''
-  }));
-  renderBudget();
-}
-
-async function loadFiles() {
-  const rows = await sheetsGet('files!A2:G');
-  state.files = rows.map(row => ({
-    id:row[0]||'', name:row[1]||'', driveId:row[2]||'',
-    url:row[3]||'', uploadedBy:row[4]||'', uploadedAt:row[5]||'', category:row[6]||''
-  }));
-  renderFiles();
-}
-
-// ═══════════════════════════════════════════════════════
-// RENDER: DASHBOARD
-// ═══════════════════════════════════════════════════════
-function renderDashboard() {
-  const total = state.projects.length;
-  const progress = state.projects.filter(p=>p.status==='progress').length;
-  const done = state.projects.filter(p=>p.status==='done').length;
-  document.getElementById('statTotal').textContent = total;
-  document.getElementById('statProgress').textContent = progress;
-  document.getElementById('statDone').textContent = done;
-
-  // Project progress with assignee
-  const progressHtml = state.projects.map(p => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
-      <div style="flex:1;">
-        <span style="font-size:0.88rem;">${escapeHtml(p.name)}</span>
-        ${p.assignee ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-left:8px;">👤 ${escapeHtml(p.assignee)}</span>` : ''}
-      </div>
-      <span class="badge badge-${p.status}">${getStatusLabel(p.status)}</span>
-    </div>
-  `).join('');
-  document.getElementById('dashboardProgress').innerHTML = progressHtml || '<p class="empty-state">프로젝트가 없습니다</p>';
-
-  // Budget
-  const totalBudget = 1000000;
-  const usedBudget = state.budget.reduce((s,b)=>s+b.amount, 0);
-  const pct = Math.min((usedBudget/totalBudget)*100, 100);
-  document.getElementById('budgetOverview').textContent = `₩${usedBudget.toLocaleString()} / ₩${totalBudget.toLocaleString()}`;
-  document.getElementById('budgetBar').style.width = pct+'%';
-
-  // Recent meetings
-  const recent = state.meetings.slice(0,3);
-  document.getElementById('dashboardMeetings').innerHTML = recent.length > 0
-    ? recent.map(m=>`<div class="meeting-item"><div class="meeting-date">${m.date} · ${escapeHtml(m.author)}</div><div class="meeting-title">${escapeHtml(m.title)}</div></div>`).join('')
-    : '<p class="empty-state">회의록이 없습니다</p>';
-}
-
-// ═══════════════════════════════════════════════════════
-// RENDER: TEAM (세로 1줄, 수정 가능)
-// ═══════════════════════════════════════════════════════
-function renderTeam() {
-  const html = state.team.map((m, i) => `
-    <div class="card team-row">
-      <div class="team-left">
-        <div class="member-avatar">${m.name.charAt(0)}</div>
-        <div class="member-info">
-          <h4>${escapeHtml(m.name)}</h4>
-          <p>${escapeHtml(m.dept)} · ${escapeHtml(m.role)}</p>
-        </div>
-      </div>
-      <button class="btn btn-secondary btn-sm" onclick="openEditMember(${i})">수정</button>
-    </div>
-  `).join('');
-  document.getElementById('teamList').innerHTML = html;
-}
-
-function openAddMemberModal() {
-  document.getElementById('newMemberName').value = '';
-  document.getElementById('newMemberDept').value = '';
-  document.getElementById('newMemberRole').value = '';
-  openModal('addMemberModal');
-}
-
-async function addMember() {
-  const name = document.getElementById('newMemberName').value.trim();
-  const dept = document.getElementById('newMemberDept').value.trim();
-  const role = document.getElementById('newMemberRole').value.trim();
-  if (!name) { showToast('이름을 입력해주세요'); return; }
-  
-  const ok = await sheetsAppend('team!A:C', [[name, dept, role]]);
-  if (ok) {
-    state.team.push({ name, dept, role });
-    showToast(`${name} 님이 추가되었습니다`);
-    renderTeam();
-  }
-  closeModal('addMemberModal');
-}
-
-function openEditMember(idx) {
-  const m = state.team[idx];
-  document.getElementById('editMemberIdx').value = idx;
-  document.getElementById('editMemberName').value = m.name;
-  document.getElementById('editMemberDept').value = m.dept;
-  document.getElementById('editMemberRole').value = m.role;
-  openModal('editMemberModal');
-}
-
-async function saveEditMember() {
-  const idx = parseInt(document.getElementById('editMemberIdx').value);
-  const dept = document.getElementById('editMemberDept').value.trim();
-  const role = document.getElementById('editMemberRole').value.trim();
-  
-  state.team[idx].dept = dept;
-  state.team[idx].role = role;
-  
-  const rowNum = idx + 2;
-  const ok = await sheetsUpdate(`team!A${rowNum}:C${rowNum}`, [[state.team[idx].name, dept, role]]);
-  if (ok) {
-    showToast('역할이 수정되었습니다');
-    renderTeam();
-  }
-  closeModal('editMemberModal');
-}
-
-// ═══════════════════════════════════════════════════════
-// RENDER: PROJECTS (다중 담당자, 상세 보기)
-// ═══════════════════════════════════════════════════════
-function renderProjects(filter = 'all') {
-  let projects = state.projects;
-  if (filter !== 'all') projects = projects.filter(p => p.status === filter);
-
-  if (projects.length === 0) {
-    document.getElementById('projectsList').innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>해당 상태의 프로젝트가 없습니다</p></div>';
-    return;
-  }
-
-  const html = projects.map(p => `
-    <div class="card project-card" onclick="openProjectDetail('${p.id}')">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
-        <div style="flex:1; min-width:200px;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-            <strong style="font-size:0.95rem;">${escapeHtml(p.name)}</strong>
-            <span class="badge badge-${p.status}">${getStatusLabel(p.status)}</span>
-          </div>
-          <div style="font-size:0.82rem; color:var(--text-secondary);">
-            ${p.assignee ? '👤 '+escapeHtml(p.assignee) : '담당자 미지정'}
-            ${p.deadline ? ' · 📅 '+p.deadline : ''}
-          </div>
-          ${p.notes ? `<div style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">📝 ${escapeHtml(p.notes)}</div>` : ''}
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openProjectModal('${p.id}')">수정</button>
-      </div>
-    </div>
-  `).join('');
-  document.getElementById('projectsList').innerHTML = html;
-}
-
-function filterProjects(filter) {
-  document.querySelectorAll('.project-filter').forEach(el => el.classList.toggle('active', el.dataset.filter === filter));
-  renderProjects(filter);
-}
-
-function openProjectDetail(id) {
-  const p = state.projects.find(x=>x.id===id);
-  if (!p) return;
-  document.getElementById('projectDetailTitle').textContent = p.name;
-  document.getElementById('projectDetailContent').innerHTML = `
-    <div style="margin-bottom:12px;">
-      <span class="badge badge-${p.status}" style="font-size:0.85rem; padding:5px 14px;">${getStatusLabel(p.status)}</span>
-    </div>
-    <table style="font-size:0.88rem;">
-      <tr><td style="font-weight:600; width:80px; padding:8px 12px 8px 0;">카테고리</td><td>${escapeHtml(p.category)||'-'}</td></tr>
-      <tr><td style="font-weight:600; padding:8px 12px 8px 0;">담당자</td><td>${escapeHtml(p.assignee)||'미지정'}</td></tr>
-      <tr><td style="font-weight:600; padding:8px 12px 8px 0;">마감일</td><td>${p.deadline||'미정'}</td></tr>
-      <tr><td style="font-weight:600; padding:8px 12px 8px 0;">메모</td><td style="white-space:pre-wrap;">${escapeHtml(p.notes)||'-'}</td></tr>
-    </table>
-  `;
-  document.getElementById('projectDetailEditBtn').onclick = () => { closeModal('projectDetailModal'); openProjectModal(id); };
-  openModal('projectDetailModal');
-}
-
-function buildAssigneeCheckboxes(selected) {
-  const names = selected ? selected.split(',').map(s=>s.trim()) : [];
-  return state.team.map(m =>
-    `<label><input type="checkbox" value="${escapeHtml(m.name)}" ${names.includes(m.name)?'checked':''}> ${escapeHtml(m.name)}</label>`
-  ).join('');
-}
-
-function getCheckedAssignees() {
-  return Array.from(document.querySelectorAll('#projectAssigneeCheckboxes input:checked'))
-    .map(cb=>cb.value).join(', ');
-}
-
-function openProjectModal(id) {
-  const isNew = !id;
-  const p = isNew ? null : state.projects.find(x=>x.id===id);
-  document.getElementById('projectEditId').value = id || '';
-  document.getElementById('projectModalTitle').textContent = isNew ? '새 프로젝트 추가' : (p.name + ' 수정');
-  document.getElementById('projectNameGroup').style.display = isNew ? 'block' : 'none';
-  document.getElementById('projectCategoryGroup').style.display = isNew ? 'block' : 'none';
-  document.getElementById('projectName').value = '';
-  document.getElementById('projectStatus').value = p ? p.status : 'todo';
-  document.getElementById('projectDeadline').value = p ? p.deadline : '';
-  document.getElementById('projectNotes').value = p ? p.notes : '';
-  document.getElementById('projectAssigneeCheckboxes').innerHTML = buildAssigneeCheckboxes(p ? p.assignee : '');
-  if (!isNew) document.getElementById('projectCategorySelect').value = p.category;
-  openModal('projectModal');
-}
-
-function openNewProjectModal() { openProjectModal(null); }
-
-async function saveProject() {
-  const id = document.getElementById('projectEditId').value;
-  const assignee = getCheckedAssignees();
-
-  if (!id) {
-    const name = document.getElementById('projectName').value.trim();
-    if (!name) { showToast('프로젝트 이름을 입력해주세요'); return; }
-    const newP = {
-      id: Date.now().toString(), name,
-      status: document.getElementById('projectStatus').value,
-      assignee,
-      deadline: document.getElementById('projectDeadline').value,
-      notes: document.getElementById('projectNotes').value,
-      category: document.getElementById('projectCategorySelect').value
-    };
-    const ok = await sheetsAppend('projects!A:G', [[newP.id, newP.name, newP.status, newP.assignee, newP.deadline, newP.notes, newP.category]]);
-    if (ok) { state.projects.push(newP); showToast('프로젝트가 추가되었습니다'); renderProjects(); renderDashboard(); }
-    closeModal('projectModal'); return;
-  }
-
-  const idx = state.projects.findIndex(p=>p.id===id);
-  if (idx===-1) return;
-  state.projects[idx].status = document.getElementById('projectStatus').value;
-  state.projects[idx].assignee = assignee;
-  state.projects[idx].deadline = document.getElementById('projectDeadline').value;
-  state.projects[idx].notes = document.getElementById('projectNotes').value;
-  const p = state.projects[idx];
-  const ok = await sheetsUpdate(`projects!A${idx+2}:G${idx+2}`, [[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category]]);
-  if (ok) { showToast('프로젝트가 업데이트되었습니다'); renderProjects(); renderDashboard(); }
-  closeModal('projectModal');
-}
+function openAddMemberModal(){document.getElementById('newMemberName').value='';document.getElementById('newMemberDept').value='';document.getElementById('newMemberRole').value='';openModal('addMemberModal')}
+async function addMember(){const n=document.getElementById('newMemberName').value.trim(),d=document.getElementById('newMemberDept').value.trim(),r=document.getElementById('newMemberRole').value.trim();if(!n){showToast('이름 입력');return}const ok=await sheetsAppend('team!A:C',[[n,d,r]]);if(ok){state.team.push({name:n,dept:d,role:r});showToast(n+' 추가됨');renderTeam()}closeModal('addMemberModal')}
+function openEditMember(i){const m=state.team[i];document.getElementById('editMemberIdx').value=i;document.getElementById('editMemberName').value=m.name;document.getElementById('editMemberDept').value=m.dept;document.getElementById('editMemberRole').value=m.role;openModal('editMemberModal')}
+async function saveEditMember(){const i=+document.getElementById('editMemberIdx').value,d=document.getElementById('editMemberDept').value.trim(),r=document.getElementById('editMemberRole').value.trim();state.team[i].dept=d;state.team[i].role=r;const ok=await sheetsUpdate(`team!A${i+2}:C${i+2}`,[[state.team[i].name,d,r]]);if(ok){showToast('수정됨');renderTeam()}closeModal('editMemberModal')}
 </script>
-
-<script>
-// ═══════════════════════════════════════════════════════
-// RENDER: FILES (열기 + 다운로드)
-// ═══════════════════════════════════════════════════════
-function renderFiles() {
-  if (state.files.length === 0) {
-    document.getElementById('filesList').innerHTML = '<div class="empty-state"><div class="icon">📎</div><p>업로드된 파일이 없습니다</p></div>';
-    return;
-  }
-  const html = state.files.map(f => `
-    <div class="file-item">
-      <div class="file-info">
-        <span class="file-icon">${getFileIcon(f.name)}</span>
-        <div style="min-width:0;">
-          <div style="font-size:0.9rem; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(f.name)}</div>
-          <div style="font-size:0.78rem; color:var(--text-secondary);">
-            ${f.category ? f.category+' · ' : ''}${escapeHtml(f.uploadedBy)} · ${formatDate(f.uploadedAt)}
-          </div>
-        </div>
-      </div>
-      <div class="file-btns">
-        <a href="${f.url}" target="_blank" class="btn btn-secondary btn-sm">열기</a>
-        <a href="https://drive.google.com/uc?export=download&id=${f.driveId}" class="btn btn-primary btn-sm" title="다운로드">⬇</a>
-      </div>
-    </div>
-  `).join('');
-  document.getElementById('filesList').innerHTML = html;
-}
-
-function uploadFile() {
-  const category = document.getElementById('fileCategory').value;
-  const input = document.createElement('input');
-  input.type = 'file'; input.multiple = false;
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    showToast('업로드 중...');
-    try {
-      const metadata = { name:file.name, parents:[CONFIG.DRIVE_FOLDER_ID] };
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
-      form.append('file', file);
-      const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
-        method:'POST', headers:{Authorization:`Bearer ${state.accessToken}`}, body:form
-      });
-      if (!resp.ok) throw new Error('Upload failed');
-      const result = await resp.json();
-      const id = Date.now().toString();
-      const uploadedAt = new Date().toISOString();
-      const url = result.webViewLink || `https://drive.google.com/file/d/${result.id}/view`;
-      await sheetsAppend('files!A:G', [[id, result.name, result.id, url, state.user.name, uploadedAt, category]]);
-      state.files.push({id, name:result.name, driveId:result.id, url, uploadedBy:state.user.name, uploadedAt, category});
-      showToast('파일이 업로드되었습니다!');
-      renderFiles();
-    } catch(err) { console.error('Upload error:', err); showToast('업로드 실패. 다시 시도해주세요.'); }
-  };
-  input.click();
-}
-
-// ═══════════════════════════════════════════════════════
-// RENDER: MEETINGS (참석자 포함)
-// ═══════════════════════════════════════════════════════
-function renderMeetings() {
-  if (state.meetings.length === 0) {
-    document.getElementById('meetingsList').innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>등록된 회의록이 없습니다</p></div>';
-    return;
-  }
-  const html = state.meetings.map(m => `
-    <div class="card" style="padding:16px; margin-bottom:12px;">
-      <div class="meeting-item" style="margin:0;">
-        <div class="meeting-date">${m.date} · ${escapeHtml(m.author)}</div>
-        <div class="meeting-title">${escapeHtml(m.title)}</div>
-        ${m.attendees ? `<div class="meeting-attendees">참석: ${escapeHtml(m.attendees)}</div>` : ''}
-        <div class="meeting-content">${escapeHtml(m.content)}</div>
-      </div>
-    </div>
-  `).join('');
-  document.getElementById('meetingsList').innerHTML = html;
-}
-
-function openMeetingModal() {
-  document.getElementById('meetingDate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('meetingTitle').value = '';
-  document.getElementById('meetingContent').value = '';
-  // Build attendees checkboxes
-  document.getElementById('meetingAttendees').innerHTML = state.team.map(m =>
-    `<label><input type="checkbox" value="${escapeHtml(m.name)}"> ${escapeHtml(m.name)}</label>`
-  ).join('');
-  openModal('meetingModal');
-}
-
-async function saveMeeting() {
-  const date = document.getElementById('meetingDate').value;
-  const title = document.getElementById('meetingTitle').value.trim();
-  const content = document.getElementById('meetingContent').value.trim();
-  const attendees = Array.from(document.querySelectorAll('#meetingAttendees input:checked')).map(cb=>cb.value).join(', ');
-  if (!title) { showToast('제목을 입력해주세요'); return; }
-
-  const id = Date.now().toString();
-  const author = state.user.name;
-  const createdAt = new Date().toISOString();
-  const ok = await sheetsAppend('meetings!A:G', [[id, date, title, content, author, createdAt, attendees]]);
-  if (ok) {
-    state.meetings.unshift({id, date, title, content, author, createdAt, attendees});
-    showToast('회의록이 저장되었습니다');
-    renderMeetings(); renderDashboard();
-  }
-  closeModal('meetingModal');
-}
-
-// ═══════════════════════════════════════════════════════
-// RENDER: BUDGET
-// ═══════════════════════════════════════════════════════
-function renderBudget() {
-  const totalBudget = 1000000;
-  const used = state.budget.reduce((s,b)=>s+b.amount, 0);
-  const remaining = totalBudget - used;
-  const pct = Math.min((used/totalBudget)*100, 100);
-  document.getElementById('budgetTotalDisplay').textContent = `₩${used.toLocaleString()} / ₩${totalBudget.toLocaleString()}`;
-  document.getElementById('budgetRemaining').textContent = `잔여: ₩${remaining.toLocaleString()}`;
-  document.getElementById('budgetProgressBar').style.width = pct+'%';
-  if (pct > 80) document.getElementById('budgetProgressBar').style.background = 'var(--danger)';
-  else if (pct > 60) document.getElementById('budgetProgressBar').style.background = 'var(--warning)';
-
-  const tbody = document.getElementById('budgetTable');
-  if (state.budget.length === 0) {
-    tbody.innerHTML = '';
-    document.getElementById('budgetEmpty').style.display = 'block';
-  } else {
-    document.getElementById('budgetEmpty').style.display = 'none';
-    tbody.innerHTML = state.budget.map(b => `
-      <tr><td>${b.date}</td><td>${escapeHtml(b.category)}</td><td>${escapeHtml(b.item)}</td>
-      <td style="font-weight:600;">₩${b.amount.toLocaleString()}</td>
-      <td style="color:var(--text-secondary);font-size:0.82rem;">${escapeHtml(b.note)}</td>
-      <td style="color:var(--text-secondary);font-size:0.82rem;">${escapeHtml(b.createdBy)}</td></tr>
-    `).join('');
-  }
-}
-
-function openBudgetModal() {
-  document.getElementById('budgetDate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('budgetCategory').value = '기타';
-  document.getElementById('budgetItem').value = '';
-  document.getElementById('budgetAmount').value = '';
-  document.getElementById('budgetNote').value = '';
-  openModal('budgetModal');
-}
-
-async function saveBudget() {
-  const date = document.getElementById('budgetDate').value;
-  const category = document.getElementById('budgetCategory').value;
-  const item = document.getElementById('budgetItem').value.trim();
-  const amount = parseInt(document.getElementById('budgetAmount').value) || 0;
-  const note = document.getElementById('budgetNote').value.trim();
-  if (!item || amount <= 0) { showToast('항목과 금액을 입력해주세요'); return; }
-
-  const id = Date.now().toString();
-  const createdBy = state.user.name;
-  const ok = await sheetsAppend('budget!A:G', [[id, category, item, amount.toString(), date, note, createdBy]]);
-  if (ok) {
-    state.budget.push({id, category, item, amount, date, note, createdBy});
-    showToast('지출이 등록되었습니다');
-    renderBudget(); renderDashboard();
-  }
-  closeModal('budgetModal');
-}
-
-// ═══════════════════════════════════════════════════════
-// UTILITIES
-// ═══════════════════════════════════════════════════════
-function getStatusLabel(s) { return {todo:'할 일',progress:'진행 중',done:'완료',pending:'보류'}[s]||s; }
-function getFileIcon(name) {
-  const ext = (name||'').split('.').pop().toLowerCase();
-  const m = {pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📽️',pptx:'📽️',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',gif:'🖼️',svg:'🖼️',psd:'🎨',ai:'🎨',fig:'🎨',zip:'📦',rar:'📦',mp4:'🎬',mov:'🎬'};
-  return m[ext]||'📁';
-}
-function formatDate(d) { if(!d)return''; try{return new Date(d).toLocaleDateString('ko-KR',{year:'numeric',month:'short',day:'numeric'})}catch{return d;} }
-function escapeHtml(s) { if(!s)return''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-function openModal(id) { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
-
-// Close modals on overlay click / Escape
-document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('active'); }));
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active')); });
-
-// ═══════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════
-window.addEventListener('load', () => {
-  if (typeof gapi !== 'undefined') gapiLoaded();
-  if (typeof google !== 'undefined' && google.accounts) gisLoaded();
-  updateDday();
-});
-
-// Token refresh every 50min
-setInterval(() => { if(state.accessToken && state.tokenClient) state.tokenClient.requestAccessToken({prompt:''}); }, 50*60*1000);
-</script>
-</body>
-</html>
