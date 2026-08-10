@@ -137,6 +137,7 @@ tr:hover td{background:var(--bg)}
         <div class="card"><div class="card-header"><h3 class="card-title">예산 현황</h3></div><div id="dashboardBudget"><div class="budget-summary"><span class="budget-total" id="budgetOverview">₩0 / ₩1,000,000</span></div><div class="progress-bar"><div class="progress-fill" id="budgetBar" style="width:0%"></div></div></div></div>
       </div>
       <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">최근 회의록</h3></div><div id="dashboardMeetings"><p class="empty-state">회의록이 없습니다</p></div></div>
+      <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">최근 수정 항목</h3></div><div id="dashboardRecent"><p class="empty-state">수정 내역이 없습니다</p></div></div>
     </div>
     <!-- TEAM -->
     <div class="page" id="page-team">
@@ -180,7 +181,7 @@ tr:hover td{background:var(--bg)}
     <div class="page" id="page-budget">
       <h2 class="page-title">예산 및 집행현황</h2>
       <div class="card">
-        <div class="budget-summary"><div><div class="budget-total" id="budgetTotalDisplay">₩0 / ₩1,000,000</div><div class="budget-used" id="budgetRemaining">잔여: ₩1,000,000</div></div><button class="btn btn-primary" onclick="openBudgetModal()">+ 지출 추가</button></div>
+        <div class="budget-summary"><div><div class="budget-total" id="budgetTotalDisplay">₩0 / ₩1,000,000</div><div class="budget-used" id="budgetRemaining">잔여: ₩1,000,000</div></div><div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="changeTotalBudget()">총 예산 변경</button><button class="btn btn-primary" onclick="openBudgetModal()">+ 지출 추가</button></div></div>
         <div class="progress-bar" style="margin-bottom:20px"><div class="progress-fill" id="budgetProgressBar" style="width:0%"></div></div>
       </div>
       <div class="filter-bar" id="budgetCategoryFilter"></div>
@@ -227,7 +228,8 @@ tr:hover td{background:var(--bg)}
   <div class="form-group"><label>마감일</label><input type="date" class="form-control" id="projectDeadline"></div>
   <div class="form-group"><label>상세내용</label><textarea class="form-control" id="projectNotes" rows="3" placeholder="상세내용..."></textarea></div>
   <div class="form-group"><label>진행일자</label><input type="date" class="form-control" id="projectProgressDate"></div>
-  <div class="form-group"><label>진행상황 기록</label><textarea class="form-control" id="projectProgressLog" rows="4" placeholder="진행 업데이트를 기록하세요... (기존 기록은 유지됩니다)"></textarea></div>
+  <div class="form-group"><label>진행상황 기록 (새 항목 추가)</label><textarea class="form-control" id="projectProgressLog" rows="2" placeholder="새 진행 업데이트 입력..."></textarea></div>
+  <div class="form-group" id="projectProgressHistory" style="display:none"><label>기존 진행상황 기록</label><div id="progressLogList" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px"></div></div>
   <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('projectModal')">취소</button><button class="btn btn-primary" onclick="saveProject()">저장</button></div>
 </div></div>
 
@@ -275,6 +277,7 @@ const CONFIG = {
 
 const state = { user:null, tokenClient:null, accessToken:null, gapiInited:false, gisInited:false,
   currentPage:'dashboard', projects:[], meetings:[], budget:[], files:[], team:[], categories:[],
+  totalBudget:1000000,
   projectFilter:'all', categoryFilter:'all', fileCategoryFilter:'all', budgetCategoryFilter:'all',
   defaultTeam:[
     {name:'강민구',dept:'드림',role:'총괄·기획·작업'},{name:'김하늘',dept:'미션',role:'기획'},
@@ -353,10 +356,27 @@ function filterBudget(c){state.budgetCategoryFilter=c;renderCategoryFilters();re
 function renderDashboard(){
   const t=state.projects.length,p=state.projects.filter(x=>x.status==='progress').length,d=state.projects.filter(x=>x.status==='done').length;
   document.getElementById('statTotal').textContent=t;document.getElementById('statProgress').textContent=p;document.getElementById('statDone').textContent=d;
-  document.getElementById('dashboardProgress').innerHTML=state.projects.map(pr=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><span style="font-size:.85rem">${esc(pr.name)}</span>${pr.assignee?`<span style="font-size:.72rem;color:var(--text-secondary);margin-left:6px">👤${esc(pr.assignee)}</span>`:''}</div><span class="badge badge-${pr.status}">${statusLabel(pr.status)}</span></div>`).join('')||'<p class="empty-state">프로젝트 없음</p>';
-  const total=1000000,used=state.budget.reduce((s,b)=>s+b.amount,0),pct=Math.min(used/total*100,100);
-  document.getElementById('budgetOverview').textContent=`₩${used.toLocaleString()} / ₩${total.toLocaleString()}`;document.getElementById('budgetBar').style.width=pct+'%';
-  const recent=state.meetings.slice(0,3);document.getElementById('dashboardMeetings').innerHTML=recent.length?recent.map(m=>`<div style="border-left:3px solid var(--accent);padding:6px 12px;margin-bottom:8px"><div style="font-size:.82rem;color:var(--text-secondary)">${m.date} ${getDayName(m.date)}</div><div style="font-weight:600;font-size:.9rem">${esc(m.title)}</div></div>`).join(''):'<p class="empty-state">회의록이 없습니다</p>';
+  // Project progress with latest log
+  document.getElementById('dashboardProgress').innerHTML=state.projects.map(pr=>{
+    const latestLog=getLatestLog(pr.progressLog);
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1;min-width:0"><span style="font-size:.85rem">${esc(pr.name)}</span>${pr.assignee?`<span style="font-size:.72rem;color:var(--text-secondary);margin-left:6px">👤${esc(pr.assignee)}</span>`:''}${latestLog?`<div style="font-size:.72rem;color:var(--accent);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📋 ${esc(latestLog)}</div>`:''}</div><span class="badge badge-${pr.status}">${statusLabel(pr.status)}</span></div>`}).join('')||'<p class="empty-state">프로젝트 없음</p>';
+  // Budget
+  const totalBudget=state.totalBudget||1000000,used=state.budget.reduce((s,b)=>s+b.amount,0),pct=Math.min(used/totalBudget*100,100);
+  document.getElementById('budgetOverview').textContent=`₩${used.toLocaleString()} / ₩${totalBudget.toLocaleString()}`;document.getElementById('budgetBar').style.width=pct+'%';
+  // Recent meetings with button
+  const recent=state.meetings.slice(0,3);document.getElementById('dashboardMeetings').innerHTML=recent.length?recent.map((m,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;border-left:3px solid var(--accent);padding:6px 12px;margin-bottom:8px"><div><div style="font-size:.82rem;color:var(--text-secondary)">${m.date} ${getDayName(m.date)}</div><div style="font-weight:600;font-size:.9rem">${esc(m.title)}</div></div><button class="btn btn-secondary btn-sm" onclick="navigateTo('meetings')">보기</button></div>`).join(''):'<p class="empty-state">회의록이 없습니다</p>';
+  // Recent modifications
+  renderRecentChanges();
+}
+function getLatestLog(log){if(!log)return'';const lines=log.split('\n').filter(Boolean);if(lines.length===0)return'';const last=lines[lines.length-1];return last.replace(/^\[\d{4}-\d{2}-\d{2}\]\s*/,'')}
+function renderRecentChanges(){
+  const items=[];
+  state.projects.forEach(p=>{if(p.progressDate)items.push({type:'프로젝트',name:p.name,date:p.progressDate,detail:getLatestLog(p.progressLog)})});
+  state.meetings.forEach(m=>{items.push({type:'회의록',name:m.title,date:m.date,detail:''})});
+  state.budget.forEach(b=>{items.push({type:'예산',name:b.item,date:b.date,detail:b.status})});
+  items.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const top5=items.slice(0,5);
+  document.getElementById('dashboardRecent').innerHTML=top5.length?top5.map(it=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><div><span style="font-size:.75rem;color:var(--text-secondary)">[${it.type}]</span> <span style="font-size:.85rem">${esc(it.name)}</span>${it.detail?` <span style="font-size:.75rem;color:var(--accent)">${esc(it.detail)}</span>`:''}</div><span style="font-size:.72rem;color:var(--text-secondary)">${it.date}</span></div>`).join(''):'<p class="empty-state">수정 내역 없음</p>';
 }
 
 // TEAM
@@ -383,7 +403,7 @@ function renderProjects(){
   let html='';
   for(const cat of Object.keys(grouped)){
     html+=`<div class="category-section"><div class="category-title"><span>📁 ${esc(cat)}</span><button class="btn btn-sm btn-secondary" onclick="openNewProjectInCategory('${esc(cat)}')">+ 추가</button></div>`;
-    html+=grouped[cat].map(p=>`<div class="card project-card" onclick="openProjectDetail('${p.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><strong style="font-size:.92rem">${esc(p.name)}</strong><span class="badge badge-${p.status}">${statusLabel(p.status)}</span></div><div style="font-size:.8rem;color:var(--text-secondary)">${p.assignee?'👤 '+esc(p.assignee):'담당자 미지정'}${p.deadline?' · 📅 '+p.deadline:''}</div>${p.notes?`<div style="font-size:.8rem;color:var(--text-secondary);margin-top:3px">${esc(p.notes).substring(0,60)}${p.notes.length>60?'...':''}</div>`:''}</div><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openProjectModal('${p.id}')">수정</button></div></div>`).join('');
+    html+=grouped[cat].map(p=>{const latestLog=getLatestLog(p.progressLog);const subtitle=latestLog||p.notes||'';return`<div class="card project-card" onclick="openProjectDetail('${p.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><strong style="font-size:.92rem">${esc(p.name)}</strong><span class="badge badge-${p.status}">${statusLabel(p.status)}</span></div><div style="font-size:.8rem;color:var(--text-secondary)">${p.assignee?'👤 '+esc(p.assignee):'담당자 미지정'}${p.deadline?' · 📅 '+p.deadline:''}</div>${subtitle?`<div style="font-size:.8rem;color:var(--text-secondary);margin-top:3px">${esc(subtitle).substring(0,80)}${subtitle.length>80?'...':''}</div>`:''}</div><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openProjectModal('${p.id}')">수정</button></div></div>`}).join('');
     html+=`</div>`;
   }
   document.getElementById('projectsList').innerHTML=html;
@@ -411,11 +431,30 @@ function openProjectModal(id,defaultCat){
   document.getElementById('projectStatus').value=p?p.status:'todo';
   document.getElementById('projectDeadline').value=p?p.deadline:'';
   document.getElementById('projectNotes').value=p?p.notes:'';
-  document.getElementById('projectProgressDate').value=p?p.progressDate:new Date().toISOString().split('T')[0];
+  document.getElementById('projectProgressDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('projectProgressLog').value='';
+  // Show existing progress log with delete option
+  const histEl=document.getElementById('projectProgressHistory');
+  const logListEl=document.getElementById('progressLogList');
+  if(p&&p.progressLog){
+    const lines=p.progressLog.split('\n').filter(Boolean);
+    histEl.style.display='block';
+    logListEl.innerHTML=lines.map((l,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:.82rem"><span>${esc(l)}</span><button class="btn-icon" onclick="deleteProgressLog(${i})" title="삭제">✕</button></div>`).join('');
+  } else {histEl.style.display='none';logListEl.innerHTML=''}
   const assignees=p?p.assignee.split(',').map(s=>s.trim()):[];
   document.getElementById('projectAssigneeCheckboxes').innerHTML=state.team.map(m=>`<label><input type="checkbox" value="${esc(m.name)}" ${assignees.includes(m.name)?'checked':''}> ${esc(m.name)}</label>`).join('');
   openModal('projectModal');
+}
+function deleteProgressLog(lineIdx){
+  const id=document.getElementById('projectEditId').value;
+  const p=state.projects.find(x=>x.id===id);if(!p)return;
+  const lines=p.progressLog.split('\n').filter(Boolean);
+  lines.splice(lineIdx,1);
+  p.progressLog=lines.join('\n');
+  // Re-render log list
+  const logListEl=document.getElementById('progressLogList');
+  logListEl.innerHTML=lines.map((l,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:.82rem"><span>${esc(l)}</span><button class="btn-icon" onclick="deleteProgressLog(${i})" title="삭제">✕</button></div>`).join('');
+  if(lines.length===0)document.getElementById('projectProgressHistory').style.display='none';
 }
 function openNewProjectModal(){openProjectModal(null)}
 async function saveProject(){
@@ -506,7 +545,7 @@ async function deleteMeeting(i){if(!confirm('이 회의록을 삭제하시겠습
 
 // BUDGET
 function renderBudget(){
-  const total=1000000,used=state.budget.reduce((s,b)=>s+b.amount,0),rem=total-used,pct=Math.min(used/total*100,100);
+  const total=state.totalBudget,used=state.budget.reduce((s,b)=>s+b.amount,0),rem=total-used,pct=Math.min(used/total*100,100);
   document.getElementById('budgetTotalDisplay').textContent=`₩${used.toLocaleString()} / ₩${total.toLocaleString()}`;
   document.getElementById('budgetRemaining').textContent=`잔여: ₩${rem.toLocaleString()}`;
   document.getElementById('budgetProgressBar').style.width=pct+'%';
@@ -572,6 +611,17 @@ function uploadReceipt(){
 </script>
 
 <script>
+function changeTotalBudget(){
+  const input=prompt('총 예산 금액을 입력하세요 (숫자만, 단위: 원)',state.totalBudget.toString());
+  if(input===null)return;
+  const val=parseInt(input.replace(/[^0-9]/g,''));
+  if(!val||val<=0){showToast('올바른 금액을 입력하세요');return}
+  state.totalBudget=val;
+  localStorage.setItem('totalBudget',val.toString());
+  showToast(`총 예산이 ₩${val.toLocaleString()}으로 변경되었습니다`);
+  renderBudget();renderDashboard();
+}
+
 // UTILITIES
 function statusLabel(s){return{todo:'할 일',progress:'진행 중',done:'완료',pending:'보류'}[s]||s}
 function fileIcon(n){const e=(n||'').split('.').pop().toLowerCase();const m={pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📽️',pptx:'📽️',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',gif:'🖼️',svg:'🖼️',psd:'🎨',ai:'🎨',fig:'🎨',zip:'📦',rar:'📦',mp4:'🎬',mov:'🎬'};return m[e]||'📁'}
@@ -583,7 +633,7 @@ function closeModal(id){document.getElementById(id).classList.remove('active')}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('active')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active'))});
-window.addEventListener('load',()=>{if(typeof gapi!=='undefined')gapiLoaded();if(typeof google!=='undefined'&&google.accounts)gisLoaded();updateDday()});
+window.addEventListener('load',()=>{if(typeof gapi!=='undefined')gapiLoaded();if(typeof google!=='undefined'&&google.accounts)gisLoaded();updateDday();const tb=localStorage.getItem('totalBudget');if(tb)state.totalBudget=parseInt(tb)});
 setInterval(()=>{if(state.accessToken&&state.tokenClient)state.tokenClient.requestAccessToken({prompt:''})},50*60*1000);
 </script>
 </body>
