@@ -414,8 +414,10 @@ function renderRecentChanges(){
 // TEAM
 function renderTeam(){
   document.getElementById('teamList').innerHTML=state.team.map((m,i)=>{
-    const myProjects=state.projects.filter(p=>p.status==='progress'&&p.assignee.includes(m.name)).map(p=>p.name);
-    return`<div class="card team-row"><div class="team-left"><div class="member-avatar">${m.name.charAt(0)}</div><div class="member-info"><h4>${esc(m.name)}</h4><p>${esc(m.dept)} · ${esc(m.role)}</p>${myProjects.length?`<div class="member-projects">진행중: ${myProjects.map(n=>esc(n)).join(', ')}</div>`:''}</div></div><button class="btn btn-secondary btn-sm" onclick="openEditMember(${i})">수정</button></div>`}).join('');
+    const progress=state.projects.filter(p=>p.status==='progress'&&p.assignee.includes(m.name)).map(p=>p.name);
+    const done=state.projects.filter(p=>p.status==='done'&&p.assignee.includes(m.name)).map(p=>p.name);
+    const todo=state.projects.filter(p=>p.status==='todo'&&p.assignee.includes(m.name)).map(p=>p.name);
+    return`<div class="card team-row"><div class="team-left"><div class="member-avatar">${m.name.charAt(0)}</div><div class="member-info"><h4>${esc(m.name)}</h4><p>${esc(m.dept)} · ${esc(m.role)}</p><div class="member-projects">진행중: ${progress.length?progress.map(n=>esc(n)).join(', '):'없음'}</div><div class="member-projects" style="color:var(--success)">완료: ${done.length?done.map(n=>esc(n)).join(', '):'없음'}</div><div class="member-projects" style="color:var(--danger)">할 일: ${todo.length?todo.map(n=>esc(n)).join(', '):'없음'}</div></div></div><button class="btn btn-secondary btn-sm" onclick="openEditMember(${i})">수정</button></div>`}).join('');
 }
 function openAddMemberModal(){document.getElementById('newMemberName').value='';document.getElementById('newMemberDept').value='';document.getElementById('newMemberRole').value='';openModal('addMemberModal')}
 async function addMember(){const n=document.getElementById('newMemberName').value.trim(),d=document.getElementById('newMemberDept').value.trim(),r=document.getElementById('newMemberRole').value.trim();if(!n){showToast('이름 입력');return}const ok=await sheetsAppend('team!A:C',[[n,d,r]]);if(ok){state.team.push({name:n,dept:d,role:r});showToast(n+' 추가됨');renderTeam()}closeModal('addMemberModal')}
@@ -429,16 +431,28 @@ function renderProjects(){
   let list=state.projects;
   if(state.projectFilter!=='all')list=list.filter(p=>p.status===state.projectFilter);
   if(state.categoryFilter!=='all')list=list.filter(p=>p.category===state.categoryFilter);
-  if(list.length===0){document.getElementById('projectsList').innerHTML='<div class="empty-state"><div class="icon">📋</div><p>프로젝트가 없습니다</p></div>';return}
   // Group by category
   const grouped={};list.forEach(p=>{const c=p.category||'기타';if(!grouped[c])grouped[c]=[];grouped[c].push(p)});
+  // Show all categories (even empty ones) when viewing all
+  const catsToShow=state.categoryFilter==='all'?state.categories:(state.categoryFilter?[state.categoryFilter]:state.categories);
   let html='';
-  for(const cat of Object.keys(grouped)){
+  for(const cat of catsToShow){
+    const projects=grouped[cat]||[];
+    html+=`<div class="category-section"><div class="category-title"><span>📁 ${esc(cat)}</span><button class="btn btn-sm btn-secondary" onclick="openNewProjectInCategory('${esc(cat)}')">+ 추가</button></div>`;
+    if(projects.length===0){
+      html+=`<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">프로젝트 없음</div>`;
+    } else {
+      html+=projects.map(p=>{const latestLog=getLatestLog(p.progressLog);const subtitle=latestLog||p.notes||'';return`<div class="card project-card" onclick="openProjectDetail('${p.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><strong style="font-size:.92rem">${esc(p.name)}</strong><span class="badge badge-${p.status}">${statusLabel(p.status)}</span></div><div style="font-size:.8rem;color:var(--text-secondary)">${p.assignee?'👤 '+esc(p.assignee):'담당자 미지정'}${p.deadline?' · 📅 '+p.deadline:''}</div>${subtitle?`<div style="font-size:.8rem;color:var(--text-secondary);margin-top:3px">${esc(subtitle).substring(0,80)}${subtitle.length>80?'...':''}</div>`:''}</div><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openProjectModal('${p.id}')">수정</button></div></div>`}).join('');
+    }
+    html+=`</div>`;
+  }
+  // Also show any grouped categories not in the main list
+  for(const cat of Object.keys(grouped)){if(!catsToShow.includes(cat)){
     html+=`<div class="category-section"><div class="category-title"><span>📁 ${esc(cat)}</span><button class="btn btn-sm btn-secondary" onclick="openNewProjectInCategory('${esc(cat)}')">+ 추가</button></div>`;
     html+=grouped[cat].map(p=>{const latestLog=getLatestLog(p.progressLog);const subtitle=latestLog||p.notes||'';return`<div class="card project-card" onclick="openProjectDetail('${p.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><strong style="font-size:.92rem">${esc(p.name)}</strong><span class="badge badge-${p.status}">${statusLabel(p.status)}</span></div><div style="font-size:.8rem;color:var(--text-secondary)">${p.assignee?'👤 '+esc(p.assignee):'담당자 미지정'}${p.deadline?' · 📅 '+p.deadline:''}</div>${subtitle?`<div style="font-size:.8rem;color:var(--text-secondary);margin-top:3px">${esc(subtitle).substring(0,80)}${subtitle.length>80?'...':''}</div>`:''}</div><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openProjectModal('${p.id}')">수정</button></div></div>`}).join('');
     html+=`</div>`;
-  }
-  document.getElementById('projectsList').innerHTML=html;
+  }}
+  document.getElementById('projectsList').innerHTML=html||'<div class="empty-state"><div class="icon">📋</div><p>프로젝트가 없습니다</p></div>';
 }
 function filterProjects(f){state.projectFilter=f;document.querySelectorAll('.filter-bar .btn[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));renderProjects()}
 function openNewProjectInCategory(cat){openProjectModal(null,cat)}
