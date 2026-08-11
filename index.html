@@ -782,7 +782,7 @@ async function deleteNotice(i){if(!confirm('삭제하시겠습니까?'))return;c
 
 // BOOTHS
 async function loadBooths(){const rows=await sheetsGet('booths!A2:F');state.booths=rows.map(r=>({id:r[0]||'',group:r[1]||'',name:r[2]||'',size:r[3]||'3*6',notes:r[4]||'',checks:r[5]?JSON.parse(r[5]):{}}))}
-async function loadBoothChecklist(){const rows=await sheetsGet('boothChecklist!A2:A');state.boothChecklist=rows.map(r=>r[0]).filter(Boolean)}
+async function loadBoothChecklist(){const rows=await sheetsGet('settings!A2:B');state.boothChecklist=[];rows.forEach(r=>{if(r[0]==='boothChecklist'&&r[1])state.boothChecklist=JSON.parse(r[1])})}
 function renderBooths(){
   const youth=state.booths.filter(b=>b.group==='청년부');
   const adult=state.booths.filter(b=>b.group==='장년부');
