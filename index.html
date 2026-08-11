@@ -474,7 +474,18 @@ function renderProjects(){
   // Group by category
   const grouped={};list.forEach(p=>{const c=p.category||'기타';if(!grouped[c])grouped[c]=[];grouped[c].push(p)});
   // Show all categories (even empty ones) when viewing all
-  const catsToShow=state.categoryFilter==='all'?state.categories:(state.categoryFilter?[state.categoryFilter]:state.categories);
+  let catsToShow=state.categoryFilter==='all'?[...state.categories]:(state.categoryFilter?[state.categoryFilter]:[...state.categories]);
+  // Sort: categories with projects first, then by priority (todo/progress > done > pending)
+  if(state.categoryFilter==='all'){
+    const priority=s=>s==='todo'||s==='progress'?0:s==='done'?1:2;
+    catsToShow.sort((a,b)=>{
+      const aList=grouped[a]||[],bList=grouped[b]||[];
+      if(aList.length!==bList.length)return bList.length-aList.length;
+      const aMin=aList.length?Math.min(...aList.map(p=>priority(p.status))):9;
+      const bMin=bList.length?Math.min(...bList.map(p=>priority(p.status))):9;
+      return aMin-bMin;
+    });
+  }
   let html='';
   for(const cat of catsToShow){
     const projects=grouped[cat]||[];
