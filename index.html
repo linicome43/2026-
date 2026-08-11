@@ -200,7 +200,7 @@ tr:hover td{background:var(--bg)}
       <h2 class="page-title">예산 및 집행현황</h2>
       <div class="card">
         <div class="budget-summary"><div><div class="budget-total" id="budgetTotalDisplay">₩0 / ₩1,000,000</div><div class="budget-used" id="budgetRemaining">잔여: ₩1,000,000</div></div><div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="changeTotalBudget()">총 예산 변경</button><button class="btn btn-primary" onclick="openBudgetModal()">+ 지출 추가</button></div></div>
-        <div class="progress-bar" style="margin-bottom:20px"><div class="progress-fill" id="budgetProgressBar" style="width:0%"></div></div>
+        <div class="progress-bar" style="margin-bottom:20px" id="budgetBarContainer"><div class="progress-fill" id="budgetProgressBar" style="width:0%"></div></div>
       </div>
       <div class="filter-bar" id="budgetCategoryFilter"></div>
       <div class="card" style="margin-top:8px"><div class="card-header"><h3 class="card-title">지출 내역</h3></div>
@@ -671,7 +671,7 @@ function renderBudget(){
   barHtml+=`</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">`;
   for(const cat of Object.keys(budgetByCat)){barHtml+=`<span style="font-size:.75rem;display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:${getCategoryColor(cat)};display:inline-block"></span>${esc(cat)} ₩${budgetByCat[cat].toLocaleString()}</span>`}
   barHtml+=`</div>`;
-  document.getElementById('budgetProgressBar').parentElement.outerHTML=barHtml;
+  document.getElementById('budgetBarContainer').innerHTML=barHtml;
   let list=state.budget;if(state.budgetCategoryFilter!=='all')list=list.filter(b=>b.category===state.budgetCategoryFilter);
   if(list.length===0){document.getElementById('budgetTable').innerHTML='';document.getElementById('budgetEmpty').style.display='block';return}
   document.getElementById('budgetEmpty').style.display='none';
