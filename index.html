@@ -432,9 +432,16 @@ function renderDashboard(){
   document.getElementById('dashboardProgress').innerHTML=state.projects.map(pr=>{
     const latestLog=getLatestLog(pr.progressLog);
     return`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1;min-width:0"><span style="font-size:.85rem">${esc(pr.name)}</span>${pr.assignee?`<span style="font-size:.72rem;color:var(--text-secondary);margin-left:6px">👤${esc(pr.assignee)}</span>`:''}${latestLog?`<div style="font-size:.72rem;color:var(--accent);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📋 ${esc(latestLog)}</div>`:''}</div><span class="badge badge-${pr.status}">${statusLabel(pr.status)}</span></div>`}).join('')||'<p class="empty-state">프로젝트 없음</p>';
-  // Budget
+  // Budget with category colors
   const totalBudget=state.totalBudget||1000000,used=state.budget.reduce((s,b)=>s+b.amount,0),pct=Math.min(used/totalBudget*100,100);
-  document.getElementById('budgetOverview').textContent=`₩${used.toLocaleString()} / ₩${totalBudget.toLocaleString()}`;document.getElementById('budgetBar').style.width=pct+'%';
+  const budgetByCat={};state.budget.forEach(b=>{const c=b.category||'기타';budgetByCat[c]=(budgetByCat[c]||0)+b.amount});
+  let budgetHtml=`<div style="font-size:.9rem;font-weight:600;margin-bottom:8px">₩${used.toLocaleString()} / ₩${totalBudget.toLocaleString()}</div>`;
+  budgetHtml+=`<div class="progress-bar" style="height:10px;display:flex;overflow:hidden;border-radius:5px;background:var(--border)">`;
+  for(const cat of Object.keys(budgetByCat)){const w=(budgetByCat[cat]/totalBudget*100).toFixed(1);budgetHtml+=`<div style="width:${w}%;background:${getCategoryColor(cat)};height:100%" title="${cat}: ₩${budgetByCat[cat].toLocaleString()}"></div>`}
+  budgetHtml+=`</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">`;
+  for(const cat of Object.keys(budgetByCat)){budgetHtml+=`<span style="font-size:.72rem;display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:${getCategoryColor(cat)};display:inline-block"></span>${esc(cat)}</span>`}
+  budgetHtml+=`</div>`;
+  document.getElementById('dashboardBudget').innerHTML=budgetHtml;
   // Recent meetings with button
   const recent=state.meetings.slice(0,3);document.getElementById('dashboardMeetings').innerHTML=recent.length?recent.map((m,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;border-left:3px solid var(--accent);padding:6px 12px;margin-bottom:8px"><div><div style="font-size:.82rem;color:var(--text-secondary)">${m.date} ${getDayName(m.date)}</div><div style="font-weight:600;font-size:.9rem">${esc(m.title)}</div></div><button class="btn btn-secondary btn-sm" onclick="navigateTo('meetings')">보기</button></div>`).join(''):'<p class="empty-state">회의록이 없습니다</p>';
   // Recent modifications
