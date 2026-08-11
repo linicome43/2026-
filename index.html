@@ -709,6 +709,27 @@ function uploadReceipt(){
 </script>
 
 <script>
+// NOTICES
+async function loadNotices(){const rows=await sheetsGet('notices!A2:D');state.notices=rows.map(r=>({id:r[0]||'',author:r[1]||'',content:r[2]||'',date:r[3]||''})).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
+function renderNotices(){
+  if(state.notices.length===0){document.getElementById('noticeList').innerHTML='<p class="empty-state">공지사항이 없습니다</p>';document.getElementById('noticeMore').style.display='none';return}
+  const show=state.noticesExpanded?state.notices:state.notices.slice(0,5);
+  document.getElementById('noticeList').innerHTML=show.map((n,i)=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:.85rem;white-space:pre-wrap">${esc(n.content)}</div><div style="font-size:.72rem;color:var(--text-secondary);margin-top:2px">👤 ${esc(n.author)} · ${n.date}</div></div><button class="btn btn-danger btn-sm" onclick="deleteNotice(${state.notices.indexOf(n)})" style="flex-shrink:0;margin-left:8px">✕</button></div>`).join('');
+  document.getElementById('noticeMore').style.display=state.notices.length>5&&!state.noticesExpanded?'block':'none';
+}
+function showAllNotices(){state.noticesExpanded=true;renderNotices()}
+function openNoticeModal(){document.getElementById('noticeAuthor').value=state.user?state.user.name:'';document.getElementById('noticeContent').value='';openModal('noticeModal')}
+async function saveNotice(){
+  const author=document.getElementById('noticeAuthor').value.trim();
+  const content=document.getElementById('noticeContent').value.trim();
+  if(!content){showToast('내용을 입력하세요');return}
+  const id=Date.now().toString(),date=new Date().toISOString().split('T')[0];
+  const ok=await sheetsAppend('notices!A:D',[[id,author,content,date]]);
+  if(ok){state.notices.unshift({id,author,content,date});showToast('공지 등록됨');renderNotices()}
+  closeModal('noticeModal');
+}
+async function deleteNotice(i){if(!confirm('삭제하시겠습니까?'))return;const n=state.notices[i];const allRows=await sheetsGet('notices!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===n.id);if(rowIdx>=0){const ok=await sheetsDelete('notices',rowIdx+1);if(ok){state.notices.splice(i,1);showToast('삭제됨');renderNotices()}}}
+
 // BOOTHS
 async function loadBooths(){const rows=await sheetsGet('booths!A2:E');state.booths=rows.map(r=>({id:r[0]||'',group:r[1]||'',name:r[2]||'',size:r[3]||'3*6',notes:r[4]||''}))}
 function renderBooths(){
