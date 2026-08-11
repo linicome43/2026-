@@ -828,6 +828,8 @@ function changeTotalBudget(){
 }
 
 // UTILITIES
+const CATEGORY_COLORS=['#4f46e5','#7c3aed','#2563eb','#0891b2','#059669','#d97706','#dc2626','#db2777','#4338ca','#0d9488'];
+function getCategoryColor(cat){const idx=state.categories.indexOf(cat);return CATEGORY_COLORS[idx%CATEGORY_COLORS.length]||CATEGORY_COLORS[0]}
 function statusLabel(s){return{todo:'할 일',progress:'진행 중',done:'완료',pending:'보류'}[s]||s}
 function fileIcon(n){const e=(n||'').split('.').pop().toLowerCase();const m={pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📽️',pptx:'📽️',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',gif:'🖼️',svg:'🖼️',psd:'🎨',ai:'🎨',fig:'🎨',zip:'📦',rar:'📦',mp4:'🎬',mov:'🎬'};return m[e]||'📁'}
 function fmtDate(d){if(!d)return'';try{return new Date(d).toLocaleDateString('ko-KR',{year:'numeric',month:'short',day:'numeric'})}catch{return d}}
