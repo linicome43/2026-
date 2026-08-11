@@ -740,15 +740,29 @@ async function loadNotices(){const rows=await sheetsGet('notices!A2:D');state.no
 function renderNotices(){
   if(state.notices.length===0){document.getElementById('noticeList').innerHTML='<p class="empty-state">공지사항이 없습니다</p>';document.getElementById('noticeMore').style.display='none';return}
   const show=state.noticesExpanded?state.notices:state.notices.slice(0,5);
-  document.getElementById('noticeList').innerHTML=show.map((n,i)=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:.85rem;white-space:pre-wrap">${esc(n.content)}</div><div style="font-size:.72rem;color:var(--text-secondary);margin-top:2px">👤 ${esc(n.author)} · ${n.date}</div></div><button class="btn btn-danger btn-sm" onclick="deleteNotice(${state.notices.indexOf(n)})" style="flex-shrink:0;margin-left:8px">✕</button></div>`).join('');
+  document.getElementById('noticeList').innerHTML=show.map((n,i)=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1;cursor:pointer" onclick="editNotice(${state.notices.indexOf(n)})"><div style="font-size:.85rem;white-space:pre-wrap">${esc(n.content)}</div><div style="font-size:.72rem;color:var(--text-secondary);margin-top:2px">👤 ${esc(n.author)}</div></div><button class="btn btn-danger btn-sm" onclick="deleteNotice(${state.notices.indexOf(n)})" style="flex-shrink:0;margin-left:8px">✕</button></div>`).join('');
   document.getElementById('noticeMore').style.display=state.notices.length>5&&!state.noticesExpanded?'block':'none';
 }
 function showAllNotices(){state.noticesExpanded=true;renderNotices()}
-function openNoticeModal(){document.getElementById('noticeAuthor').value=state.user?state.user.name:'';document.getElementById('noticeContent').value='';openModal('noticeModal')}
+function openNoticeModal(editIdx){
+  const isEdit=editIdx!==undefined;const n=isEdit?state.notices[editIdx]:null;
+  document.getElementById('noticeAuthor').value=n?n.author:(state.user?state.user.name:'');
+  document.getElementById('noticeContent').value=n?n.content:'';
+  document.getElementById('noticeModal').dataset.editIdx=isEdit?editIdx:'';
+  openModal('noticeModal');
+}
+function editNotice(i){openNoticeModal(i)}
 async function saveNotice(){
+  const editIdx=document.getElementById('noticeModal').dataset.editIdx;
   const author=document.getElementById('noticeAuthor').value.trim();
   const content=document.getElementById('noticeContent').value.trim();
   if(!content){showToast('내용을 입력하세요');return}
+  if(editIdx!==''){
+    const i=+editIdx;const n=state.notices[i];n.author=author;n.content=content;
+    const allRows=await sheetsGet('notices!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===n.id);
+    if(rowIdx>=0){await sheetsUpdate(`notices!A${rowIdx+2}:D${rowIdx+2}`,[[n.id,author,content,n.date]]);showToast('수정됨')}
+    renderNotices();closeModal('noticeModal');return;
+  }
   const id=Date.now().toString(),date=new Date().toISOString().split('T')[0];
   const ok=await sheetsAppend('notices!A:D',[[id,author,content,date]]);
   if(ok){state.notices.unshift({id,author,content,date});showToast('공지 등록됨');renderNotices()}
