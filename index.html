@@ -150,23 +150,17 @@ tr:hover td{background:var(--bg)}
     <!-- BOOTHS -->
     <div class="page" id="page-booths">
       <h2 class="page-title">부스 운영</h2>
-      <div class="grid-2">
-        <div>
-          <div class="category-section">
-            <div class="category-title"><span>🏪 청년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('청년부')">+ 부스 추가</button></div>
-            <div id="boothListYouth"></div>
-          </div>
-          <div class="category-section">
-            <div class="category-title"><span>🏪 장년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('장년부')">+ 부스 추가</button></div>
-            <div id="boothListAdult"></div>
-          </div>
-        </div>
-        <div>
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">✅ 공통 체크리스트</h3><button class="btn btn-secondary btn-sm" onclick="addChecklistItem()">+ 항목 추가</button></div>
-            <div id="boothChecklistItems"></div>
-          </div>
-        </div>
+      <div class="category-section">
+        <div class="category-title"><span>🏪 청년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('청년부')">+ 부스 추가</button></div>
+        <div id="boothListYouth"></div>
+      </div>
+      <div class="category-section">
+        <div class="category-title"><span>🏪 장년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('장년부')">+ 부스 추가</button></div>
+        <div id="boothListAdult"></div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="card-header"><h3 class="card-title">✅ 공통 체크리스트</h3><button class="btn btn-secondary btn-sm" onclick="addChecklistItem()">+ 항목 추가</button></div>
+        <div class="table-wrap" id="boothChecklistTable"></div>
       </div>
     </div>
     <!-- PROJECTS -->
@@ -786,21 +780,23 @@ async function loadBoothChecklist(){const rows=await sheetsGet('settings!A2:B');
 function renderBooths(){
   const youth=state.booths.filter(b=>b.group==='청년부');
   const adult=state.booths.filter(b=>b.group==='장년부');
-  document.getElementById('boothListYouth').innerHTML=youth.length?youth.map(b=>renderBoothCard(b,'청년부')).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
-  document.getElementById('boothListAdult').innerHTML=adult.length?adult.map(b=>renderBoothCard(b,'장년부')).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
-  renderBoothChecklistPanel();
+  document.getElementById('boothListYouth').innerHTML=youth.length?youth.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('청년부','${b.id}')"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+  document.getElementById('boothListAdult').innerHTML=adult.length?adult.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('장년부','${b.id}')"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+  renderBoothChecklistTable();
 }
-function renderBoothCard(b,group){
-  const total=state.boothChecklist.length;
-  const checked=total?state.boothChecklist.filter(item=>b.checks[item]).length:0;
-  const pct=total?Math.round(checked/total*100):0;
-  let checkHtml=state.boothChecklist.map(item=>`<label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer;padding:2px 0"><input type="checkbox" ${b.checks[item]?'checked':''} onchange="toggleBoothCheck('${b.id}','${esc(item)}',this.checked)" onclick="event.stopPropagation()"> ${esc(item)}</label>`).join('');
-  return`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('${group}','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span>${total?`<span style="font-size:.72rem;margin-left:8px;color:${pct===100?'var(--success)':'var(--accent)'}">${checked}/${total}</span>`:''}</div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap">${esc(b.notes)}</div>`:''}${checkHtml?`<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px" onclick="event.stopPropagation()">${checkHtml}</div>`:''}</div>`;
-}
-function renderBoothChecklistPanel(){
-  const el=document.getElementById('boothChecklistItems');
-  if(state.boothChecklist.length===0){el.innerHTML='<p style="color:var(--text-secondary);font-size:.85rem">체크리스트 항목을 추가하세요</p>';return}
-  el.innerHTML=state.boothChecklist.map((item,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:.88rem">☑️ ${esc(item)}</span><button class="btn-icon" onclick="removeChecklistItem(${i})" title="삭제">✕</button></div>`).join('');
+function renderBoothChecklistTable(){
+  const el=document.getElementById('boothChecklistTable');
+  if(state.boothChecklist.length===0||state.booths.length===0){el.innerHTML='<p style="color:var(--text-secondary);font-size:.85rem;padding:12px">체크리스트 항목을 추가하고 부스를 등록하세요</p>';return}
+  let html='<table><thead><tr><th>부스명</th>';
+  html+=state.boothChecklist.map((item,i)=>`<th style="text-align:center;font-size:.72rem;min-width:60px">${esc(item)} <button class="btn-icon" onclick="removeChecklistItem(${i})" style="font-size:.6rem">✕</button></th>`).join('');
+  html+='</tr></thead><tbody>';
+  state.booths.forEach(b=>{
+    html+=`<tr><td style="font-weight:500;font-size:.85rem">${esc(b.name)}<span style="font-size:.7rem;color:var(--text-secondary);margin-left:4px">(${b.group})</span></td>`;
+    html+=state.boothChecklist.map(item=>`<td style="text-align:center"><input type="checkbox" ${b.checks[item]?'checked':''} onchange="toggleBoothCheck('${b.id}','${esc(item)}',this.checked)"></td>`).join('');
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
 }
 async function addChecklistItem(){
   const name=prompt('체크리스트 항목 이름을 입력하세요');
