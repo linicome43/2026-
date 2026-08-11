@@ -792,7 +792,8 @@ function renderBooths(){
 }
 function renderBoothChecklistTable(){
   const el=document.getElementById('boothChecklistTable');
-  if(state.boothChecklist.length===0||state.booths.length===0){el.innerHTML='<p style="color:var(--text-secondary);font-size:.85rem;padding:12px">체크리스트 항목을 추가하고 부스를 등록하세요</p>';return}
+  if(state.booths.length===0){el.innerHTML='<p style="color:var(--text-secondary);font-size:.85rem;padding:12px">부스를 먼저 등록하세요</p>';return}
+  if(state.boothChecklist.length===0){el.innerHTML='<p style="color:var(--text-secondary);font-size:.85rem;padding:12px">체크리스트 항목을 추가하세요</p>';return}
   let html='<table><thead><tr><th>부스명</th>';
   html+=state.boothChecklist.map((item,i)=>`<th style="text-align:center;font-size:.72rem;min-width:60px">${esc(item)} <button class="btn-icon" onclick="removeChecklistItem(${i})" style="font-size:.6rem">✕</button></th>`).join('');
   html+='</tr></thead><tbody>';
@@ -859,7 +860,7 @@ async function saveBooth(){
     const ok=await sheetsAppend('booths!A:F',[[id,group,name,size,notes,'{}']]);
     if(ok){state.booths.push({id,group,name,size,notes,checks:{}});showToast('부스 추가됨')}
   }
-  renderBooths();closeModal('boothModal');
+  closeModal('boothModal');renderBooths();
 }
 async function deleteBooth(){
   const editId=document.getElementById('boothEditId').value;
