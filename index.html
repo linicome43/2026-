@@ -857,7 +857,7 @@ async function saveBooth(){
   } else {
     const id=Date.now().toString();
     const ok=await sheetsAppend('booths!A:F',[[id,group,name,size,notes,'{}']]);
-    if(ok){state.booths.push({id,group,name,size,notes,checks:{}});showToast('부스 추가됨')}
+    if(ok){state.booths.push({id,group,name,size,notes,checks:{}});state.booths.sort((a,b)=>{if(a.group===b.group)return 0;return a.group==='청년부'?-1:1});showToast('부스 추가됨')}
   }
   closeModal('boothModal');renderBooths();
 }
