@@ -150,17 +150,23 @@ tr:hover td{background:var(--bg)}
     <!-- BOOTHS -->
     <div class="page" id="page-booths">
       <h2 class="page-title">부스 운영</h2>
-      <div class="category-section">
-        <div class="category-title"><span>🏪 청년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('청년부')">+ 부스 추가</button></div>
-        <div id="boothListYouth"></div>
-      </div>
-      <div class="category-section">
-        <div class="category-title"><span>🏪 장년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('장년부')">+ 부스 추가</button></div>
-        <div id="boothListAdult"></div>
-      </div>
-      <div class="card" style="margin-top:20px">
-        <div class="card-header"><h3 class="card-title">✅ 공통 체크리스트</h3><button class="btn btn-secondary btn-sm" onclick="addChecklistItem()">+ 항목 추가</button></div>
-        <div class="table-wrap" id="boothChecklistTable"></div>
+      <div class="grid-2">
+        <div>
+          <div class="category-section">
+            <div class="category-title"><span>🏪 청년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('청년부')">+ 부스 추가</button></div>
+            <div id="boothListYouth"></div>
+          </div>
+          <div class="category-section">
+            <div class="category-title"><span>🏪 장년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('장년부')">+ 부스 추가</button></div>
+            <div id="boothListAdult"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="position:sticky;top:0">
+            <div class="card-header"><h3 class="card-title">✅ 공통 체크리스트</h3><button class="btn btn-secondary btn-sm" onclick="addChecklistItem()">+ 항목 추가</button></div>
+            <div class="table-wrap" id="boothChecklistTable"></div>
+          </div>
+        </div>
       </div>
     </div>
     <!-- PROJECTS -->
