@@ -137,6 +137,7 @@ tr:hover td{background:var(--bg)}
         <div class="card"><div class="card-header"><h3 class="card-title">프로젝트 진행상황</h3></div><div id="dashboardProgress"></div></div>
         <div class="card"><div class="card-header"><h3 class="card-title">예산 현황</h3></div><div id="dashboardBudget"><div class="budget-summary"><span class="budget-total" id="budgetOverview">₩0 / ₩1,000,000</span></div><div class="progress-bar"><div class="progress-fill" id="budgetBar" style="width:0%"></div></div></div></div>
       </div>
+      <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">📢 공지사항</h3><button class="btn btn-secondary btn-sm" onclick="openNoticeModal()">+ 작성</button></div><div id="noticeList"><p class="empty-state">공지사항이 없습니다</p></div><div id="noticeMore" style="display:none;text-align:center;margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="showAllNotices()">전체 보기</button></div></div>
       <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">최근 회의록</h3></div><div id="dashboardMeetings"><p class="empty-state">회의록이 없습니다</p></div></div>
       <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">업데이트 항목</h3></div><div id="dashboardRecent"><p class="empty-state">수정 내역이 없습니다</p></div></div>
     </div>
@@ -300,6 +301,13 @@ tr:hover td{background:var(--bg)}
   <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('themeModal')">취소</button><button class="btn btn-primary" onclick="saveThemes()">저장</button></div>
 </div></div>
 
+<div class="modal-overlay" id="noticeModal"><div class="modal">
+  <h3 class="modal-title">공지사항 작성</h3>
+  <div class="form-group"><label>작성자</label><input type="text" class="form-control" id="noticeAuthor" placeholder="이름"></div>
+  <div class="form-group"><label>공지 내용</label><textarea class="form-control" id="noticeContent" rows="4" placeholder="공지 내용..."></textarea></div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('noticeModal')">취소</button><button class="btn btn-primary" onclick="saveNotice()">저장</button></div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://apis.google.com/js/api.js"></script>
@@ -315,7 +323,7 @@ const CONFIG = {
 };
 
 const state = { user:null, tokenClient:null, accessToken:null, gapiInited:false, gisInited:false,
-  currentPage:'dashboard', projects:[], meetings:[], budget:[], files:[], team:[], categories:[], booths:[], themes:['','',''],
+  currentPage:'dashboard', projects:[], meetings:[], budget:[], files:[], team:[], categories:[], booths:[], themes:['','',''], notices:[], noticesExpanded:false,
   totalBudget:1000000,
   projectFilter:'all', categoryFilter:'all', fileCategoryFilter:'all', budgetCategoryFilter:'all',
   defaultTeam:[
@@ -359,7 +367,7 @@ async function sheetsDelete(sheetName,rowIdx){try{const r=await gapi.client.shee
 
 <script>
 // DATA LOADING
-async function loadAllData(){await Promise.all([loadSettings(),loadTeam(),loadCategories(),loadProjects(),loadMeetings(),loadBudget(),loadFiles(),loadBooths(),loadThemes()]);renderAll()}
+async function loadAllData(){await Promise.all([loadSettings(),loadTeam(),loadCategories(),loadProjects(),loadMeetings(),loadBudget(),loadFiles(),loadBooths(),loadThemes(),loadNotices()]);renderAll()}
 async function loadSettings(){const rows=await sheetsGet('settings!A2:B');if(rows.length===0){await sheetsAppend('settings!A:B',[['totalBudget','1000000']])}else{rows.forEach(r=>{if(r[0]==='totalBudget')state.totalBudget=parseInt(r[1])||1000000})}}
 async function loadTeam(){const rows=await sheetsGet('team!A2:C');if(rows.length===0){state.team=[...state.defaultTeam];await sheetsAppend('team!A:C',state.defaultTeam.map(m=>[m.name,m.dept,m.role]))}else{state.team=rows.map(r=>({name:r[0]||'',dept:r[1]||'',role:r[2]||''}))}}
 async function loadCategories(){const rows=await sheetsGet('categories!A2:A');if(rows.length===0){state.categories=[...state.defaultCategories];await sheetsAppend('categories!A:A',state.defaultCategories.map(c=>[c]))}else{state.categories=rows.map(r=>r[0]).filter(Boolean)}}
@@ -367,7 +375,7 @@ async function loadProjects(){const rows=await sheetsGet('projects!A2:I');if(row
 async function loadMeetings(){const rows=await sheetsGet('meetings!A2:G');state.meetings=rows.map(r=>({id:r[0]||'',date:r[1]||'',title:r[2]||'',content:r[3]||'',author:r[4]||'',createdAt:r[5]||'',attendees:r[6]||''})).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
 async function loadBudget(){const rows=await sheetsGet('budget!A2:J');state.budget=rows.map(r=>({id:r[0]||'',category:r[1]||'',item:r[2]||'',amount:parseInt(r[3])||0,date:r[4]||'',note:r[5]||'',createdBy:r[6]||'',status:r[7]||'지출예정',receiptId:r[8]||'',receiptUrl:r[9]||''}))}
 async function loadFiles(){const rows=await sheetsGet('files!A2:I');state.files=rows.map(r=>({id:r[0]||'',name:r[1]||'',driveId:r[2]||'',url:r[3]||'',uploadedBy:r[4]||'',uploadedAt:r[5]||'',category:r[6]||'',description:r[7]||'',author:r[8]||''}))}
-function renderAll(){renderDashboard();renderTeam();renderCategoryFilters();renderProjects();renderFiles();renderMeetings();renderBudget();renderBooths();renderThemes()}
+function renderAll(){renderDashboard();renderTeam();renderCategoryFilters();renderProjects();renderFiles();renderMeetings();renderBudget();renderBooths();renderThemes();renderNotices()}
 
 // CATEGORIES
 function renderCategoryFilters(){
@@ -706,8 +714,8 @@ async function loadBooths(){const rows=await sheetsGet('booths!A2:E');state.boot
 function renderBooths(){
   const youth=state.booths.filter(b=>b.group==='청년부');
   const adult=state.booths.filter(b=>b.group==='장년부');
-  document.getElementById('boothListYouth').innerHTML=youth.length?youth.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('청년부','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
-  document.getElementById('boothListAdult').innerHTML=adult.length?adult.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('장년부','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+  document.getElementById('boothListYouth').innerHTML=youth.length?youth.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('청년부','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+  document.getElementById('boothListAdult').innerHTML=adult.length?adult.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('장년부','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
 }
 function openBoothModal(group,editId){
   const b=editId?state.booths.find(x=>x.id===editId):null;
