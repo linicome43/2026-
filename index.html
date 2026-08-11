@@ -923,7 +923,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('active')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active'))});
 window.addEventListener('load',()=>{if(typeof gapi!=='undefined')gapiLoaded();if(typeof google!=='undefined'&&google.accounts)gisLoaded();updateDday()});
-setInterval(()=>{if(state.accessToken&&state.tokenClient)state.tokenClient.requestAccessToken({prompt:''})},50*60*1000);
+setInterval(()=>{if(state.accessToken)gapi.client.setToken({access_token:state.accessToken})},50*60*1000);
 </script>
 </body>
 </html>
