@@ -661,11 +661,17 @@ async function deleteMeeting(i){if(!confirm('이 회의록을 삭제하시겠습
 
 // BUDGET
 function renderBudget(){
-  const total=state.totalBudget,used=state.budget.reduce((s,b)=>s+b.amount,0),rem=total-used,pct=Math.min(used/total*100,100);
+  const total=state.totalBudget,used=state.budget.reduce((s,b)=>s+b.amount,0),rem=total-used;
+  const budgetByCat={};state.budget.forEach(b=>{const c=b.category||'기타';budgetByCat[c]=(budgetByCat[c]||0)+b.amount});
   document.getElementById('budgetTotalDisplay').textContent=`₩${used.toLocaleString()} / ₩${total.toLocaleString()}`;
   document.getElementById('budgetRemaining').textContent=`잔여: ₩${rem.toLocaleString()}`;
-  document.getElementById('budgetProgressBar').style.width=pct+'%';
-  document.getElementById('budgetProgressBar').style.background=pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--accent)';
+  // Multi-color progress bar
+  let barHtml=`<div style="height:10px;display:flex;overflow:hidden;border-radius:5px;background:var(--border)">`;
+  for(const cat of Object.keys(budgetByCat)){const w=(budgetByCat[cat]/total*100).toFixed(1);barHtml+=`<div style="width:${w}%;background:${getCategoryColor(cat)};height:100%" title="${cat}: ₩${budgetByCat[cat].toLocaleString()}"></div>`}
+  barHtml+=`</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">`;
+  for(const cat of Object.keys(budgetByCat)){barHtml+=`<span style="font-size:.75rem;display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:${getCategoryColor(cat)};display:inline-block"></span>${esc(cat)} ₩${budgetByCat[cat].toLocaleString()}</span>`}
+  barHtml+=`</div>`;
+  document.getElementById('budgetProgressBar').parentElement.outerHTML=barHtml;
   let list=state.budget;if(state.budgetCategoryFilter!=='all')list=list.filter(b=>b.category===state.budgetCategoryFilter);
   if(list.length===0){document.getElementById('budgetTable').innerHTML='';document.getElementById('budgetEmpty').style.display='block';return}
   document.getElementById('budgetEmpty').style.display='none';
