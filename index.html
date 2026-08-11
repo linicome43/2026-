@@ -805,13 +805,22 @@ function renderBoothChecklistPanel(){
 async function addChecklistItem(){
   const name=prompt('체크리스트 항목 이름을 입력하세요');
   if(!name||!name.trim())return;
-  const ok=await sheetsAppend('boothChecklist!A:A',[[name.trim()]]);
-  if(ok){state.boothChecklist.push(name.trim());showToast('항목 추가됨');renderBooths()}
+  state.boothChecklist.push(name.trim());
+  await saveBoothChecklist();
+  showToast('항목 추가됨');renderBooths();
 }
 async function removeChecklistItem(i){
   if(!confirm(`'${state.boothChecklist[i]}' 항목을 삭제하시겠습니까?`))return;
-  const ok=await sheetsDelete('boothChecklist',i+1);
-  if(ok){state.boothChecklist.splice(i,1);showToast('삭제됨');renderBooths()}
+  state.boothChecklist.splice(i,1);
+  await saveBoothChecklist();
+  showToast('삭제됨');renderBooths();
+}
+async function saveBoothChecklist(){
+  const allRows=await sheetsGet('settings!A2:B');
+  const rowIdx=allRows.findIndex(r=>r[0]==='boothChecklist');
+  const val=JSON.stringify(state.boothChecklist);
+  if(rowIdx>=0){await sheetsUpdate(`settings!A${rowIdx+2}:B${rowIdx+2}`,[['boothChecklist',val]])}
+  else{await sheetsAppend('settings!A:B',[['boothChecklist',val]])}
 }
 async function toggleBoothCheck(boothId,item,checked){
   const idx=state.booths.findIndex(b=>b.id===boothId);if(idx===-1)return;
