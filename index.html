@@ -797,11 +797,10 @@ function renderBoothChecklistTable(){
   let html='<table><thead><tr><th>부스명</th>';
   html+=state.boothChecklist.map((item,i)=>`<th style="text-align:center;font-size:.72rem;min-width:60px">${esc(item)} <button class="btn-icon" onclick="removeChecklistItem(${i})" style="font-size:.6rem">✕</button></th>`).join('');
   html+='</tr></thead><tbody>';
-  state.booths.forEach(b=>{
-    html+=`<tr><td style="font-weight:500;font-size:.85rem">${esc(b.name)}<span style="font-size:.7rem;color:var(--text-secondary);margin-left:4px">(${b.group})</span></td>`;
-    html+=state.boothChecklist.map(item=>`<td style="text-align:center"><input type="checkbox" ${b.checks[item]?'checked':''} onchange="toggleBoothCheck('${b.id}','${esc(item)}',this.checked)"></td>`).join('');
-    html+='</tr>';
-  });
+  const youth=state.booths.filter(b=>b.group==='청년부');
+  const adult=state.booths.filter(b=>b.group==='장년부');
+  if(youth.length){html+=`<tr><td colspan="${state.boothChecklist.length+1}" style="font-weight:700;font-size:.8rem;background:var(--accent-light);color:var(--accent);padding:6px 12px">🏪 청년부</td></tr>`;youth.forEach(b=>{html+=`<tr><td style="font-weight:500;font-size:.85rem">${esc(b.name)}</td>`;html+=state.boothChecklist.map(item=>`<td style="text-align:center"><input type="checkbox" ${b.checks[item]?'checked':''} onchange="toggleBoothCheck('${b.id}','${esc(item)}',this.checked)"></td>`).join('');html+='</tr>'})}
+  if(adult.length){html+=`<tr><td colspan="${state.boothChecklist.length+1}" style="font-weight:700;font-size:.8rem;background:var(--bg);color:var(--text-secondary);padding:6px 12px">🏪 장년부</td></tr>`;adult.forEach(b=>{html+=`<tr><td style="font-weight:500;font-size:.85rem">${esc(b.name)}</td>`;html+=state.boothChecklist.map(item=>`<td style="text-align:center"><input type="checkbox" ${b.checks[item]?'checked':''} onchange="toggleBoothCheck('${b.id}','${esc(item)}',this.checked)"></td>`).join('');html+='</tr>'})}
   html+='</tbody></table>';
   el.innerHTML=html;
 }
