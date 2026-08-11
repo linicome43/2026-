@@ -150,13 +150,23 @@ tr:hover td{background:var(--bg)}
     <!-- BOOTHS -->
     <div class="page" id="page-booths">
       <h2 class="page-title">부스 운영</h2>
-      <div class="category-section">
-        <div class="category-title"><span>🏪 청년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('청년부')">+ 부스 추가</button></div>
-        <div id="boothListYouth"></div>
-      </div>
-      <div class="category-section">
-        <div class="category-title"><span>🏪 장년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('장년부')">+ 부스 추가</button></div>
-        <div id="boothListAdult"></div>
+      <div class="grid-2">
+        <div>
+          <div class="category-section">
+            <div class="category-title"><span>🏪 청년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('청년부')">+ 부스 추가</button></div>
+            <div id="boothListYouth"></div>
+          </div>
+          <div class="category-section">
+            <div class="category-title"><span>🏪 장년부 부스</span><button class="btn btn-sm btn-secondary" onclick="openBoothModal('장년부')">+ 부스 추가</button></div>
+            <div id="boothListAdult"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">✅ 공통 체크리스트</h3><button class="btn btn-secondary btn-sm" onclick="addChecklistItem()">+ 항목 추가</button></div>
+            <div id="boothChecklistItems"></div>
+          </div>
+        </div>
       </div>
     </div>
     <!-- PROJECTS -->
@@ -323,7 +333,7 @@ const CONFIG = {
 };
 
 const state = { user:null, tokenClient:null, accessToken:null, gapiInited:false, gisInited:false,
-  currentPage:'dashboard', projects:[], meetings:[], budget:[], files:[], team:[], categories:[], booths:[], themes:['','',''], notices:[], noticesExpanded:false,
+  currentPage:'dashboard', projects:[], meetings:[], budget:[], files:[], team:[], categories:[], booths:[], boothChecklist:[], themes:['','',''], notices:[], noticesExpanded:false,
   totalBudget:1000000,
   projectFilter:'all', categoryFilter:'all', fileCategoryFilter:'all', budgetCategoryFilter:'all',
   defaultTeam:[
@@ -367,7 +377,7 @@ async function sheetsDelete(sheetName,rowIdx){try{const r=await gapi.client.shee
 
 <script>
 // DATA LOADING
-async function loadAllData(){await Promise.all([loadSettings(),loadTeam(),loadCategories(),loadProjects(),loadMeetings(),loadBudget(),loadFiles(),loadBooths(),loadThemes(),loadNotices()]);renderAll()}
+async function loadAllData(){await Promise.all([loadSettings(),loadTeam(),loadCategories(),loadProjects(),loadMeetings(),loadBudget(),loadFiles(),loadBooths(),loadBoothChecklist(),loadThemes(),loadNotices()]);renderAll()}
 async function loadSettings(){const rows=await sheetsGet('settings!A2:B');if(rows.length===0){await sheetsAppend('settings!A:B',[['totalBudget','1000000']])}else{rows.forEach(r=>{if(r[0]==='totalBudget')state.totalBudget=parseInt(r[1])||1000000})}}
 async function loadTeam(){const rows=await sheetsGet('team!A2:C');if(rows.length===0){state.team=[...state.defaultTeam];await sheetsAppend('team!A:C',state.defaultTeam.map(m=>[m.name,m.dept,m.role]))}else{state.team=rows.map(r=>({name:r[0]||'',dept:r[1]||'',role:r[2]||''}))}}
 async function loadCategories(){const rows=await sheetsGet('categories!A2:A');if(rows.length===0){state.categories=[...state.defaultCategories];await sheetsAppend('categories!A:A',state.defaultCategories.map(c=>[c]))}else{state.categories=rows.map(r=>r[0]).filter(Boolean)}}
@@ -771,12 +781,43 @@ async function saveNotice(){
 async function deleteNotice(i){if(!confirm('삭제하시겠습니까?'))return;const n=state.notices[i];const allRows=await sheetsGet('notices!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===n.id);if(rowIdx>=0){const ok=await sheetsDelete('notices',rowIdx+1);if(ok){state.notices.splice(i,1);showToast('삭제됨');renderNotices()}}}
 
 // BOOTHS
-async function loadBooths(){const rows=await sheetsGet('booths!A2:E');state.booths=rows.map(r=>({id:r[0]||'',group:r[1]||'',name:r[2]||'',size:r[3]||'3*6',notes:r[4]||''}))}
+async function loadBooths(){const rows=await sheetsGet('booths!A2:F');state.booths=rows.map(r=>({id:r[0]||'',group:r[1]||'',name:r[2]||'',size:r[3]||'3*6',notes:r[4]||'',checks:r[5]?JSON.parse(r[5]):{}}))}
+async function loadBoothChecklist(){const rows=await sheetsGet('boothChecklist!A2:A');state.boothChecklist=rows.map(r=>r[0]).filter(Boolean)}
 function renderBooths(){
   const youth=state.booths.filter(b=>b.group==='청년부');
   const adult=state.booths.filter(b=>b.group==='장년부');
-  document.getElementById('boothListYouth').innerHTML=youth.length?youth.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('청년부','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
-  document.getElementById('boothListAdult').innerHTML=adult.length?adult.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('장년부','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+  document.getElementById('boothListYouth').innerHTML=youth.length?youth.map(b=>renderBoothCard(b,'청년부')).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+  document.getElementById('boothListAdult').innerHTML=adult.length?adult.map(b=>renderBoothCard(b,'장년부')).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+  renderBoothChecklistPanel();
+}
+function renderBoothCard(b,group){
+  const total=state.boothChecklist.length;
+  const checked=total?state.boothChecklist.filter(item=>b.checks[item]).length:0;
+  const pct=total?Math.round(checked/total*100):0;
+  let checkHtml=state.boothChecklist.map(item=>`<label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer;padding:2px 0"><input type="checkbox" ${b.checks[item]?'checked':''} onchange="toggleBoothCheck('${b.id}','${esc(item)}',this.checked)" onclick="event.stopPropagation()"> ${esc(item)}</label>`).join('');
+  return`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('${group}','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span>${total?`<span style="font-size:.72rem;margin-left:8px;color:${pct===100?'var(--success)':'var(--accent)'}">${checked}/${total}</span>`:''}</div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap">${esc(b.notes)}</div>`:''}${checkHtml?`<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px" onclick="event.stopPropagation()">${checkHtml}</div>`:''}</div>`;
+}
+function renderBoothChecklistPanel(){
+  const el=document.getElementById('boothChecklistItems');
+  if(state.boothChecklist.length===0){el.innerHTML='<p style="color:var(--text-secondary);font-size:.85rem">체크리스트 항목을 추가하세요</p>';return}
+  el.innerHTML=state.boothChecklist.map((item,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:.88rem">☑️ ${esc(item)}</span><button class="btn-icon" onclick="removeChecklistItem(${i})" title="삭제">✕</button></div>`).join('');
+}
+async function addChecklistItem(){
+  const name=prompt('체크리스트 항목 이름을 입력하세요');
+  if(!name||!name.trim())return;
+  const ok=await sheetsAppend('boothChecklist!A:A',[[name.trim()]]);
+  if(ok){state.boothChecklist.push(name.trim());showToast('항목 추가됨');renderBooths()}
+}
+async function removeChecklistItem(i){
+  if(!confirm(`'${state.boothChecklist[i]}' 항목을 삭제하시겠습니까?`))return;
+  const ok=await sheetsDelete('boothChecklist',i+1);
+  if(ok){state.boothChecklist.splice(i,1);showToast('삭제됨');renderBooths()}
+}
+async function toggleBoothCheck(boothId,item,checked){
+  const idx=state.booths.findIndex(b=>b.id===boothId);if(idx===-1)return;
+  if(checked)state.booths[idx].checks[item]=true;else delete state.booths[idx].checks[item];
+  const b=state.booths[idx];
+  await sheetsUpdate(`booths!A${idx+2}:F${idx+2}`,[[b.id,b.group,b.name,b.size,b.notes,JSON.stringify(b.checks)]]);
 }
 function openBoothModal(group,editId){
   const b=editId?state.booths.find(x=>x.id===editId):null;
@@ -799,12 +840,13 @@ async function saveBooth(){
   if(editId){
     const idx=state.booths.findIndex(b=>b.id===editId);if(idx===-1)return;
     state.booths[idx]={...state.booths[idx],name,size,notes};
-    await sheetsUpdate(`booths!A${idx+2}:E${idx+2}`,[[editId,group,name,size,notes]]);
+    const b=state.booths[idx];
+    await sheetsUpdate(`booths!A${idx+2}:F${idx+2}`,[[editId,group,name,size,notes,JSON.stringify(b.checks||{})]]);
     showToast('부스 수정됨');
   } else {
     const id=Date.now().toString();
-    const ok=await sheetsAppend('booths!A:E',[[id,group,name,size,notes]]);
-    if(ok){state.booths.push({id,group,name,size,notes});showToast('부스 추가됨')}
+    const ok=await sheetsAppend('booths!A:F',[[id,group,name,size,notes,'{}']]);
+    if(ok){state.booths.push({id,group,name,size,notes,checks:{}});showToast('부스 추가됨')}
   }
   renderBooths();closeModal('boothModal');
 }
