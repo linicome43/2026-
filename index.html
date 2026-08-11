@@ -701,6 +701,81 @@ function uploadReceipt(){
 </script>
 
 <script>
+// BOOTHS
+async function loadBooths(){const rows=await sheetsGet('booths!A2:E');state.booths=rows.map(r=>({id:r[0]||'',group:r[1]||'',name:r[2]||'',size:r[3]||'3*6',notes:r[4]||''}))}
+function renderBooths(){
+  const youth=state.booths.filter(b=>b.group==='청년부');
+  const adult=state.booths.filter(b=>b.group==='장년부');
+  document.getElementById('boothListYouth').innerHTML=youth.length?youth.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('청년부','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+  document.getElementById('boothListAdult').innerHTML=adult.length?adult.map(b=>`<div class="card" style="padding:14px;cursor:pointer" onclick="openBoothModal('장년부','${b.id}')"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${esc(b.name)}</strong><span style="font-size:.78rem;color:var(--text-secondary);margin-left:8px">📐 ${esc(b.size)}</span></div></div>${b.notes?`<div style="font-size:.82rem;color:var(--text-secondary);margin-top:4px">${esc(b.notes)}</div>`:''}</div>`).join(''):'<div style="padding:12px 16px;color:var(--text-secondary);font-size:.85rem">부스 없음</div>';
+}
+function openBoothModal(group,editId){
+  const b=editId?state.booths.find(x=>x.id===editId):null;
+  document.getElementById('boothEditId').value=editId||'';
+  document.getElementById('boothGroup').value=group;
+  document.getElementById('boothModalTitle').textContent=b?'부스 수정':'부스 추가 ('+group+')';
+  document.getElementById('boothName').value=b?b.name:'';
+  document.getElementById('boothSize').value=b?b.size:'3*6';
+  document.getElementById('boothNotes').value=b?b.notes:'';
+  document.getElementById('deleteBoothBtn').style.display=b?'inline-block':'none';
+  openModal('boothModal');
+}
+async function saveBooth(){
+  const editId=document.getElementById('boothEditId').value;
+  const group=document.getElementById('boothGroup').value;
+  const name=document.getElementById('boothName').value.trim();
+  const size=document.getElementById('boothSize').value.trim()||'3*6';
+  const notes=document.getElementById('boothNotes').value.trim();
+  if(!name){showToast('부스명 입력');return}
+  if(editId){
+    const idx=state.booths.findIndex(b=>b.id===editId);if(idx===-1)return;
+    state.booths[idx]={...state.booths[idx],name,size,notes};
+    await sheetsUpdate(`booths!A${idx+2}:E${idx+2}`,[[editId,group,name,size,notes]]);
+    showToast('부스 수정됨');
+  } else {
+    const id=Date.now().toString();
+    const ok=await sheetsAppend('booths!A:E',[[id,group,name,size,notes]]);
+    if(ok){state.booths.push({id,group,name,size,notes});showToast('부스 추가됨')}
+  }
+  renderBooths();closeModal('boothModal');
+}
+async function deleteBooth(){
+  const editId=document.getElementById('boothEditId').value;
+  if(!confirm('이 부스를 삭제하시겠습니까?'))return;
+  const idx=state.booths.findIndex(b=>b.id===editId);if(idx===-1)return;
+  const ok=await sheetsDelete('booths',idx+1);
+  if(ok){state.booths.splice(idx,1);showToast('삭제됨');renderBooths()}
+  closeModal('boothModal');
+}
+
+// THEMES
+async function loadThemes(){const rows=await sheetsGet('settings!A2:B');rows.forEach(r=>{if(r[0]==='theme1')state.themes[0]=r[1]||'';if(r[0]==='theme2')state.themes[1]=r[1]||'';if(r[0]==='theme3')state.themes[2]=r[1]||''})}
+function renderThemes(){
+  const list=state.themes.filter(Boolean);
+  document.getElementById('themeList').innerHTML=list.length?list.map((t,i)=>`<div style="padding:6px 0;font-size:.9rem;border-bottom:1px solid var(--border)"><span style="color:var(--accent);font-weight:600">${i+1}안</span> ${esc(t)}</div>`).join(''):'<p style="color:var(--text-secondary);font-size:.85rem">주제 후보를 등록해주세요</p>';
+  // D-Day banner theme display
+  const confirmed=list.length>0?list[0]:'미정';
+  document.getElementById('themeDisplay').innerHTML=`🎯 주제: <strong>${esc(list.length===1?list[0]:'후보 '+list.length+'개 검토 중')}</strong>`;
+}
+function openThemeModal(){
+  document.getElementById('theme1').value=state.themes[0]||'';
+  document.getElementById('theme2').value=state.themes[1]||'';
+  document.getElementById('theme3').value=state.themes[2]||'';
+  openModal('themeModal');
+}
+async function saveThemes(){
+  state.themes=[document.getElementById('theme1').value.trim(),document.getElementById('theme2').value.trim(),document.getElementById('theme3').value.trim()];
+  // Save to settings sheet
+  const allRows=await sheetsGet('settings!A2:B');
+  const updates=[['theme1',state.themes[0]],['theme2',state.themes[1]],['theme3',state.themes[2]]];
+  for(const [key,val] of updates){
+    const rowIdx=allRows.findIndex(r=>r[0]===key);
+    if(rowIdx>=0){await sheetsUpdate(`settings!A${rowIdx+2}:B${rowIdx+2}`,[[key,val]])}
+    else{await sheetsAppend('settings!A:B',[[key,val]])}
+  }
+  showToast('주제 후보 저장됨');renderThemes();closeModal('themeModal');
+}
+
 function changeTotalBudget(){
   const input=prompt('총 예산 금액을 입력하세요 (숫자만, 단위: 원)',state.totalBudget.toString());
   if(input===null)return;
