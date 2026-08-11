@@ -535,8 +535,8 @@ function openProjectModal(id,defaultCat){
   const isNew=!id;const p=isNew?null:state.projects.find(x=>x.id===id);
   document.getElementById('projectEditId').value=id||'';
   document.getElementById('projectModalTitle').textContent=isNew?'새 프로젝트 추가':(p.name+' 수정');
-  document.getElementById('projectNameGroup').style.display=isNew?'block':'none';
-  document.getElementById('projectName').value='';
+  document.getElementById('projectNameGroup').style.display='block';
+  document.getElementById('projectName').value=p?p.name:'';
   document.getElementById('projectCategorySelect').value=p?p.category:(defaultCat||state.categories[0]||'');
   document.getElementById('projectStatus').value=p?p.status:'todo';
   document.getElementById('projectDeadline').value=p?p.deadline:'';
