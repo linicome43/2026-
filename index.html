@@ -941,6 +941,113 @@ async function saveThemes(){
   showToast('주제 후보 저장됨');renderThemes();closeModal('themeModal');
 }
 
+// SCHEDULE & CALENDAR
+async function loadSchedule(){const rows=await sheetsGet('schedule!A2:E');state.schedule=rows.map(r=>({id:r[0]||'',title:r[1]||'',startDate:r[2]||'',endDate:r[3]||'',color:r[4]||'#4f46e5'}))}
+function renderCalendar(){
+  const today=new Date();const year=today.getFullYear();const month=today.getMonth();
+  // Build 3 months: prev, current, next
+  let html='';
+  for(let m=month-1;m<=month+2;m++){
+    const d=new Date(year,m,1);const mYear=d.getFullYear();const mMonth=d.getMonth();
+    const monthName=d.toLocaleDateString('ko-KR',{year:'numeric',month:'long'});
+    html+=`<div style="margin-bottom:16px"><div style="font-weight:700;font-size:.9rem;padding:8px 0">${monthName}</div>`;
+    html+=`<div class="cal-grid">`;
+    ['일','월','화','수','목','금','토'].forEach(d=>html+=`<div class="cal-header">${d}</div>`);
+    const firstDay=new Date(mYear,mMonth,1).getDay();
+    const daysInMonth=new Date(mYear,mMonth+1,0).getDate();
+    const prevDays=new Date(mYear,mMonth,0).getDate();
+    // Previous month padding
+    for(let i=firstDay-1;i>=0;i--){html+=`<div class="cal-day other-month"><div class="day-num">${prevDays-i}</div></div>`}
+    // Current month days
+    for(let day=1;day<=daysInMonth;day++){
+      const dateStr=`${mYear}-${String(mMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isToday=mYear===today.getFullYear()&&mMonth===today.getMonth()&&day===today.getDate();
+      const events=state.schedule.filter(s=>{const sd=s.startDate;const ed=s.endDate||s.startDate;return dateStr>=sd&&dateStr<=ed});
+      html+=`<div class="cal-day${isToday?' today':''}" id="cal-${dateStr}"><div class="day-num">${day}</div>`;
+      events.forEach(e=>html+=`<div class="cal-event" style="background:${e.color}" onclick="openScheduleModal('${e.id}')" title="${esc(e.title)}">${esc(e.title)}</div>`);
+      html+=`</div>`;
+    }
+    // Next month padding
+    const totalCells=firstDay+daysInMonth;const remaining=7-(totalCells%7);
+    if(remaining<7){for(let i=1;i<=remaining;i++){html+=`<div class="cal-day other-month"><div class="day-num">${i}</div></div>`}}
+    html+=`</div></div>`;
+  }
+  document.getElementById('calendarGrid').innerHTML=html;
+  // Scroll to today
+  setTimeout(()=>{const todayEl=document.getElementById('cal-'+today.toISOString().split('T')[0]);if(todayEl)todayEl.scrollIntoView({block:'center'})},100);
+  renderTimeline();
+}
+function renderTimeline(){
+  const el=document.getElementById('timelineContainer');
+  const events=state.schedule.filter(s=>s.startDate);
+  if(events.length===0){el.innerHTML='<p class="empty-state">일정을 추가하면 타임라인이 표시됩니다</p>';return}
+  // Determine date range
+  const allDates=events.flatMap(e=>[e.startDate,e.endDate||e.startDate]);
+  let minD=new Date(Math.min(...allDates.map(d=>new Date(d))));
+  let maxD=new Date(Math.max(...allDates.map(d=>new Date(d))));
+  minD.setDate(minD.getDate()-3);maxD.setDate(maxD.getDate()+7);
+  const days=[];for(let d=new Date(minD);d<=maxD;d.setDate(d.getDate()+1))days.push(new Date(d).toISOString().split('T')[0]);
+  const todayStr=new Date().toISOString().split('T')[0];
+  const dayWidth=32;
+  // Header dates
+  let html=`<div style="min-width:${120+days.length*dayWidth}px">`;
+  html+=`<div class="timeline-dates" style="margin-left:120px">`;
+  days.forEach(d=>{const dd=new Date(d);const isToday=d===todayStr;html+=`<div class="tl-date${isToday?' today':''}">${dd.getDate()}<br>${dd.toLocaleDateString('ko-KR',{weekday:'narrow'})}</div>`});
+  html+=`</div>`;
+  // Event rows
+  events.sort((a,b)=>a.startDate.localeCompare(b.startDate));
+  events.forEach(e=>{
+    const startIdx=days.indexOf(e.startDate);
+    const endIdx=days.indexOf(e.endDate||e.startDate);
+    const left=Math.max(0,startIdx)*dayWidth;
+    const width=Math.max(1,(endIdx-startIdx+1))*dayWidth-4;
+    html+=`<div class="timeline-row"><div class="timeline-label">${esc(e.title)}</div><div class="timeline-bar-area" style="height:22px;position:relative"><div class="timeline-bar" style="left:${left}px;width:${width}px;background:${e.color}" onclick="openScheduleModal('${e.id}')">${esc(e.title)}</div></div></div>`;
+  });
+  html+=`</div>`;
+  el.innerHTML=html;
+  // Scroll to today
+  const todayIdx=days.indexOf(todayStr);
+  if(todayIdx>0)el.scrollLeft=Math.max(0,todayIdx*dayWidth-150);
+}
+function openScheduleModal(editId){
+  const s=editId?state.schedule.find(x=>x.id===editId):null;
+  document.getElementById('scheduleEditId').value=editId||'';
+  document.getElementById('scheduleModalTitle').textContent=s?'일정 수정':'일정 추가';
+  document.getElementById('scheduleTitle').value=s?s.title:'';
+  document.getElementById('scheduleStart').value=s?s.startDate:new Date().toISOString().split('T')[0];
+  document.getElementById('scheduleEnd').value=s?s.endDate:'';
+  document.getElementById('scheduleColor').value=s?s.color:'#4f46e5';
+  document.getElementById('deleteScheduleBtn').style.display=s?'inline-block':'none';
+  openModal('scheduleModal');
+}
+async function saveSchedule(){
+  const editId=document.getElementById('scheduleEditId').value;
+  const title=document.getElementById('scheduleTitle').value.trim();
+  const startDate=document.getElementById('scheduleStart').value;
+  const endDate=document.getElementById('scheduleEnd').value;
+  const color=document.getElementById('scheduleColor').value;
+  if(!title||!startDate){showToast('제목과 시작일을 입력하세요');return}
+  if(editId){
+    const idx=state.schedule.findIndex(s=>s.id===editId);if(idx===-1)return;
+    state.schedule[idx]={id:editId,title,startDate,endDate,color};
+    await sheetsUpdate(`schedule!A${idx+2}:E${idx+2}`,[[editId,title,startDate,endDate,color]]);
+    showToast('일정 수정됨');
+  } else {
+    const id=Date.now().toString();
+    const ok=await sheetsAppend('schedule!A:E',[[id,title,startDate,endDate,color]]);
+    if(ok){state.schedule.push({id,title,startDate,endDate,color});showToast('일정 추가됨')}
+  }
+  renderCalendar();closeModal('scheduleModal');
+}
+async function deleteSchedule(){
+  const editId=document.getElementById('scheduleEditId').value;
+  if(!confirm('삭제하시겠습니까?'))return;
+  const idx=state.schedule.findIndex(s=>s.id===editId);if(idx===-1)return;
+  const ok=await sheetsDelete('schedule',idx+1);
+  if(ok){state.schedule.splice(idx,1);showToast('삭제됨');renderCalendar()}
+  closeModal('scheduleModal');
+}
+
 function changeTotalBudget(){
   const input=prompt('총 예산 금액을 입력하세요 (숫자만, 단위: 원)',state.totalBudget.toString());
   if(input===null)return;
