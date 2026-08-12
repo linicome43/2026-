@@ -622,7 +622,7 @@ async function deleteProject(id){
 
 // DRAG & DROP
 let dragHappened=false;
-function dragStart(e,id){state.dragProjectId=id;dragHappened=true;e.target.classList.add('dragging');document.getElementById('dropZones').classList.add('active');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id)}
+function dragStart(e,id){state.dragProjectId=id;dragHappened=true;const card=document.getElementById('pcard-'+id);if(card)card.classList.add('dragging');document.getElementById('dropZones').classList.add('active');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id)}
 function dragEnd(){state.dragProjectId=null;document.querySelectorAll('.dragging').forEach(el=>el.classList.remove('dragging'));document.getElementById('dropZones').classList.remove('active');document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('over'));setTimeout(()=>{dragHappened=false},100)}
 function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('over')}
 function dragLeave(e){e.currentTarget.classList.remove('over')}
