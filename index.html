@@ -1043,8 +1043,10 @@ function renderCalendar(){
       const dateStr=`${mYear}-${String(mMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       const isToday=mYear===today.getFullYear()&&mMonth===today.getMonth()&&day===today.getDate();
       const events=state.schedule.filter(s=>{const sd=s.startDate;const ed=s.endDate||s.startDate;return dateStr>=sd&&dateStr<=ed});
+      const deadlines=state.projects.filter(p=>p.calSync&&p.deadline===dateStr);
       html+=`<div class="cal-day${isToday?' today':''}" id="cal-${dateStr}"><div class="day-num">${day}</div>`;
       events.forEach(e=>html+=`<div class="cal-event" style="background:${e.color}" onclick="openScheduleModal('${e.id}')" title="${esc(e.title)}">${esc(e.title)}</div>`);
+      deadlines.forEach(p=>html+=`<div style="font-size:.6rem;color:#000;padding:1px 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.name)}">· [마감] ${esc(p.name)}</div>`);
       html+=`</div>`;
     }
     // Next month padding
