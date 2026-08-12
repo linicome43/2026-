@@ -103,7 +103,7 @@ tr:hover td{background:var(--bg)}
 .cal-day.today{background:var(--accent-light)}
 .cal-day .day-num{font-weight:600;margin-bottom:2px;font-size:.78rem}
 .cal-day.other-month .day-num{color:var(--border)}
-.cal-event{font-size:.65rem;padding:1px 4px;border-radius:3px;color:#fff;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border:1.5px solid;background:transparent}
+.cal-event{font-size:.65rem;padding:1px 4px;border-radius:3px;color:#fff;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .cal-event-multi{position:relative;font-size:.65rem;padding:1px 4px;border-radius:3px;color:#fff;margin-bottom:1px;white-space:nowrap;cursor:pointer}
 .timeline-wrap{display:flex;min-width:max-content}
 .timeline-dates{display:flex;border-bottom:1px solid var(--border)}
@@ -142,13 +142,13 @@ tr:hover td{background:var(--bg)}
   </header>
   <nav class="sidebar" id="sidebar">
     <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')"><span class="icon">🏠</span> 대시보드</button>
-    <button class="nav-item" data-page="team" onclick="navigateTo('team')"><span class="icon">👥</span> 팀원 & 역할</button>
+    <button class="nav-item" data-page="calendar" onclick="navigateTo('calendar')"><span class="icon">📅</span> 캘린더 & 일정관리</button>
     <button class="nav-item" data-page="booths" onclick="navigateTo('booths')"><span class="icon">🏪</span> 부스 운영</button>
     <button class="nav-item" data-page="projects" onclick="navigateTo('projects')"><span class="icon">📋</span> 세부 프로젝트</button>
     <button class="nav-item" data-page="files" onclick="navigateTo('files')"><span class="icon">📎</span> 파일 업로드</button>
     <button class="nav-item" data-page="meetings" onclick="navigateTo('meetings')"><span class="icon">📝</span> 회의록</button>
-    <button class="nav-item" data-page="calendar" onclick="navigateTo('calendar')"><span class="icon">📅</span> 캘린더 & 일정관리</button>
     <button class="nav-item" data-page="budget" onclick="navigateTo('budget')"><span class="icon">💰</span> 예산 및 집행현황</button>
+    <button class="nav-item" data-page="team" onclick="navigateTo('team')"><span class="icon">👥</span> 팀원 & 역할</button>
   </nav>
   <main class="main-content">
     <!-- DASHBOARD -->
@@ -379,6 +379,7 @@ tr:hover td{background:var(--bg)}
     <option value="#059669">초록</option><option value="#d97706">주황</option><option value="#dc2626">빨강</option>
     <option value="#db2777">핑크</option><option value="#4338ca">남색</option>
   </select></div>
+  <div class="form-group"><label><input type="checkbox" id="scheduleTimeline" checked> 타임라인에 표시</label></div>
   <div class="modal-actions"><button class="btn btn-danger btn-sm" id="deleteScheduleBtn" onclick="deleteSchedule()" style="display:none;margin-right:auto">삭제</button><button class="btn btn-secondary" onclick="closeModal('scheduleModal')">취소</button><button class="btn btn-primary" onclick="saveSchedule()">저장</button></div>
 </div></div>
 
@@ -963,7 +964,7 @@ async function saveThemes(){
 }
 
 // SCHEDULE & CALENDAR
-async function loadSchedule(){const rows=await sheetsGet('schedule!A2:E');state.schedule=rows.map(r=>({id:r[0]||'',title:r[1]||'',startDate:r[2]||'',endDate:r[3]||'',color:r[4]||'#4f46e5'}))}
+async function loadSchedule(){const rows=await sheetsGet('schedule!A2:F');state.schedule=rows.map(r=>({id:r[0]||'',title:r[1]||'',startDate:r[2]||'',endDate:r[3]||'',color:r[4]||'#4f46e5',showTimeline:r[5]!=='false'}))}
 function renderCalendar(){
   const today=new Date();const year=today.getFullYear();const month=today.getMonth();
   // Build 3 months: prev, current, next
@@ -985,12 +986,7 @@ function renderCalendar(){
       const isToday=mYear===today.getFullYear()&&mMonth===today.getMonth()&&day===today.getDate();
       const events=state.schedule.filter(s=>{const sd=s.startDate;const ed=s.endDate||s.startDate;return dateStr>=sd&&dateStr<=ed});
       html+=`<div class="cal-day${isToday?' today':''}" id="cal-${dateStr}"><div class="day-num">${day}</div>`;
-      events.forEach(e=>{
-        const isStart=dateStr===e.startDate;const isEnd=dateStr===(e.endDate||e.startDate);const hasRange=e.endDate&&e.endDate!==e.startDate;
-        const radius=hasRange?(isStart?'3px 0 0 3px':isEnd?'0 3px 3px 0':'0'):'3px';
-        const label=isStart?esc(e.title):'';
-        html+=`<div class="cal-event" style="border-color:${e.color};background:${e.color}30;color:${e.color};border-radius:${radius};${hasRange?'margin-'+(isStart?'right':'left')+':0;':''}${!isStart&&!isEnd&&hasRange?'margin:0 0 1px 0;border-left:none;border-right:none;':''}" onclick="openScheduleModal('${e.id}')" title="${esc(e.title)}">${label}</div>`;
-      });
+      events.forEach(e=>html+=`<div class="cal-event" style="background:${e.color}" onclick="openScheduleModal('${e.id}')" title="${esc(e.title)}">${esc(e.title)}</div>`);
       html+=`</div>`;
     }
     // Next month padding
@@ -1005,32 +1001,24 @@ function renderCalendar(){
 }
 function renderTimeline(){
   const el=document.getElementById('timelineContainer');
-  const events=state.schedule.filter(s=>s.startDate);
-  if(events.length===0){el.innerHTML='<p class="empty-state">일정을 추가하면 타임라인이 표시됩니다</p>';return}
-  // Determine date range
+  const events=state.schedule.filter(s=>s.startDate&&s.showTimeline);
+  if(events.length===0){el.innerHTML='<p class="empty-state">타임라인에 표시할 일정이 없습니다</p>';return}
   const allDates=events.flatMap(e=>[e.startDate,e.endDate||e.startDate]);
+  const todayStr=new Date().toISOString().split('T')[0];
+  allDates.push(todayStr);
   let minD=new Date(Math.min(...allDates.map(d=>new Date(d))));
   let maxD=new Date(Math.max(...allDates.map(d=>new Date(d))));
-  minD.setDate(minD.getDate()-3);maxD.setDate(maxD.getDate()+7);
+  minD.setDate(minD.getDate()-7);maxD.setDate(maxD.getDate()+14);
   const days=[];for(let d=new Date(minD);d<=maxD;d.setDate(d.getDate()+1))days.push(new Date(d).toISOString().split('T')[0]);
-  const todayStr=new Date().toISOString().split('T')[0];
   const dayWidth=32;
-  // Header: months
   let html=`<div style="min-width:${120+days.length*dayWidth}px">`;
-  html+=`<div class="timeline-months">`;
-  let curMonth='';days.forEach((d,i)=>{const m=new Date(d).toLocaleDateString('ko-KR',{month:'short'});if(m!==curMonth){curMonth=m;let count=days.filter(dd=>new Date(dd).toLocaleDateString('ko-KR',{month:'short'})===m).length;html+=`<div class="tl-month" style="width:${count*dayWidth}px">${m}</div>`}});
-  html=html.replace(/<div class="tl-month"/g,'');// rebuild properly
-  // Simpler month header
-  html=`<div style="min-width:${120+days.length*dayWidth}px">`;
   let months=[];let prev='';days.forEach(d=>{const m=new Date(d).toLocaleDateString('ko-KR',{year:'numeric',month:'short'});if(m!==prev){months.push({name:m,count:1});prev=m}else{months[months.length-1].count++}});
   html+=`<div style="display:flex;margin-left:120px;border-bottom:1px solid var(--border)">`;
   months.forEach(m=>html+=`<div style="width:${m.count*dayWidth}px;font-size:.72rem;font-weight:600;padding:4px 0;text-align:center;color:var(--text)">${m.name}</div>`);
   html+=`</div>`;
-  // Header: dates
   html+=`<div class="timeline-dates" style="margin-left:120px">`;
   days.forEach(d=>{const dd=new Date(d);const isToday=d===todayStr;html+=`<div class="tl-date${isToday?' today':''}">${dd.getDate()}</div>`});
   html+=`</div>`;
-  // Event rows
   events.sort((a,b)=>a.startDate.localeCompare(b.startDate));
   events.forEach(e=>{
     const startIdx=days.indexOf(e.startDate);
@@ -1041,9 +1029,8 @@ function renderTimeline(){
   });
   html+=`</div>`;
   el.innerHTML=html;
-  // Scroll to today
   const todayIdx=days.indexOf(todayStr);
-  if(todayIdx>0)el.scrollLeft=Math.max(0,todayIdx*dayWidth-150);
+  if(todayIdx>0)el.scrollLeft=Math.max(0,(todayIdx-3)*dayWidth);
 }
 function openScheduleModal(editId){
   const s=editId?state.schedule.find(x=>x.id===editId):null;
@@ -1053,6 +1040,7 @@ function openScheduleModal(editId){
   document.getElementById('scheduleStart').value=s?s.startDate:new Date().toISOString().split('T')[0];
   document.getElementById('scheduleEnd').value=s?s.endDate:'';
   document.getElementById('scheduleColor').value=s?s.color:'#4f46e5';
+  document.getElementById('scheduleTimeline').checked=s?s.showTimeline:true;
   document.getElementById('deleteScheduleBtn').style.display=s?'inline-block':'none';
   openModal('scheduleModal');
 }
@@ -1062,16 +1050,17 @@ async function saveSchedule(){
   const startDate=document.getElementById('scheduleStart').value;
   const endDate=document.getElementById('scheduleEnd').value;
   const color=document.getElementById('scheduleColor').value;
+  const showTimeline=document.getElementById('scheduleTimeline').checked;
   if(!title||!startDate){showToast('제목과 시작일을 입력하세요');return}
   if(editId){
     const idx=state.schedule.findIndex(s=>s.id===editId);if(idx===-1)return;
-    state.schedule[idx]={id:editId,title,startDate,endDate,color};
-    await sheetsUpdate(`schedule!A${idx+2}:E${idx+2}`,[[editId,title,startDate,endDate,color]]);
+    state.schedule[idx]={id:editId,title,startDate,endDate,color,showTimeline};
+    await sheetsUpdate(`schedule!A${idx+2}:F${idx+2}`,[[editId,title,startDate,endDate,color,showTimeline.toString()]]);
     showToast('일정 수정됨');
   } else {
     const id=Date.now().toString();
-    const ok=await sheetsAppend('schedule!A:E',[[id,title,startDate,endDate,color]]);
-    if(ok){state.schedule.push({id,title,startDate,endDate,color});showToast('일정 추가됨')}
+    const ok=await sheetsAppend('schedule!A:F',[[id,title,startDate,endDate,color,showTimeline.toString()]]);
+    if(ok){state.schedule.push({id,title,startDate,endDate,color,showTimeline});showToast('일정 추가됨')}
   }
   renderCalendar();closeModal('scheduleModal');
 }
