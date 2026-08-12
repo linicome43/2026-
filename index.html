@@ -617,7 +617,7 @@ async function quickStatusChange(id,newStatus){
   const idx=state.projects.findIndex(p=>p.id===id);if(idx===-1)return;
   state.projects[idx].status=newStatus;
   const p=state.projects[idx];
-  await sheetsUpdate(`projects!A${idx+2}:I${idx+2}`,[[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category,p.progressDate,p.progressLog]]);
+  await sheetsUpdate(`projects!A${idx+2}:J${idx+2}`,[[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category,p.progressDate,p.progressLog,(p.calSync||false).toString()]]);
   showToast(`"${p.name}" → ${statusLabel(newStatus)}`);
   renderAll();
 }
