@@ -108,7 +108,13 @@ tr:hover td{background:var(--bg)}
 .timeline-wrap{display:flex;min-width:max-content}
 .timeline-dates{display:flex;border-bottom:1px solid var(--border)}
 .timeline-dates .tl-date{width:32px;text-align:center;font-size:.6rem;color:var(--text-secondary);padding:4px 0;flex-shrink:0}
-.timeline-dates .tl-date.today{background:var(--accent-light);font-weight:700;color:var(--accent)}
+.timeline-dates .tl-date.today{background:var(--accent-light);font-weight:700;color:var(--accent);border-radius:50%;outline:2px solid var(--accent)}
+.timeline-months{display:flex;margin-left:120px;border-bottom:1px solid var(--border)}
+.timeline-months .tl-month{font-size:.7rem;font-weight:600;color:var(--text);padding:4px 0;text-align:center}
+#timelineContainer{overflow-x:scroll!important}
+#timelineContainer::-webkit-scrollbar{height:8px}
+#timelineContainer::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+#timelineContainer::-webkit-scrollbar-thumb:hover{background:var(--text-secondary)}
 .timeline-row{display:flex;align-items:center;margin-bottom:2px}
 .timeline-label{width:120px;font-size:.75rem;font-weight:500;padding:4px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .timeline-bar-area{display:flex;position:relative;flex:1}
