@@ -667,6 +667,7 @@ function openProjectModal(id,defaultCat){
   document.getElementById('projectCategorySelect').value=p?p.category:(defaultCat||state.categories[0]||'');
   document.getElementById('projectStatus').value=p?p.status:'todo';
   document.getElementById('projectDeadline').value=p?p.deadline:'';
+  document.getElementById('projectCalSync').checked=p?p.calSync:false;
   document.getElementById('projectNotes').value=p?p.notes:'';
   document.getElementById('projectProgressDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('projectProgressLog').value='';
