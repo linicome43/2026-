@@ -627,8 +627,13 @@ function renderComments(projectId){
   const comments=state.comments.filter(c=>c.projectId===projectId).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const el=document.getElementById('projectComments');
   if(comments.length===0){el.innerHTML='<p style="font-size:.82rem;color:var(--text-secondary)">아직 댓글이 없습니다</p>';return}
-  el.innerHTML=comments.map(c=>`<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.8rem;font-weight:600;color:var(--accent)">${esc(c.author)}</span><span style="font-size:.7rem;color:var(--text-secondary)">${c.date}</span></div><div style="font-size:.83rem;margin-top:2px">${esc(c.content)}</div></div>`).join('');
+  el.innerHTML=comments.map(c=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start"><div><div style="display:flex;align-items:center;gap:6px"><span style="font-size:.8rem;font-weight:600;color:var(--accent)">${esc(c.author)}</span><span style="font-size:.7rem;color:var(--text-secondary)">${c.date}</span></div><div style="font-size:.83rem;margin-top:2px">${esc(c.content)}</div></div><button class="btn-icon" onclick="deleteComment('${c.id}','${projectId}')" style="flex-shrink:0;font-size:.7rem">✕</button></div>`).join('');
   el.scrollTop=el.scrollHeight;
+}
+async function deleteComment(commentId,projectId){
+  const idx=state.comments.findIndex(c=>c.id===commentId);if(idx===-1)return;
+  const allRows=await sheetsGet('comments!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===commentId);
+  if(rowIdx>=0){const ok=await sheetsDelete('comments',rowIdx+1);if(ok){state.comments.splice(idx,1);renderComments(projectId);renderProjects();showToast('댓글 삭제됨')}}
 }
 async function addComment(){
   const input=document.getElementById('commentInput');
