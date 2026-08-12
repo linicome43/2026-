@@ -329,6 +329,14 @@ tr:hover td{background:var(--bg)}
 <div class="modal-overlay" id="projectDetailModal"><div class="modal" style="max-width:600px">
   <h3 class="modal-title" id="projectDetailTitle">프로젝트 상세</h3>
   <div id="projectDetailContent"></div>
+  <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+    <strong style="font-size:.9rem">💬 댓글/피드백</strong>
+    <div id="projectComments" style="margin-top:8px;max-height:200px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input type="text" class="form-control" id="commentInput" placeholder="댓글을 입력하세요..." style="flex:1">
+      <button class="btn btn-primary btn-sm" onclick="addComment()">등록</button>
+    </div>
+  </div>
   <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('projectDetailModal')">닫기</button><button class="btn btn-primary" id="projectDetailEditBtn">수정</button></div>
 </div></div>
 
@@ -413,7 +421,7 @@ const CONFIG = {
 };
 
 const state = { user:null, tokenClient:null, accessToken:null, gapiInited:false, gisInited:false,
-  currentPage:'dashboard', projects:[], meetings:[], budget:[], files:[], team:[], categories:[], booths:[], boothChecklist:[], themes:['','',''], notices:[], noticesExpanded:false, schedule:[],
+  currentPage:'dashboard', projects:[], meetings:[], budget:[], files:[], team:[], categories:[], booths:[], boothChecklist:[], themes:['','',''], notices:[], noticesExpanded:false, schedule:[], comments:[], dragProjectId:null,
   totalBudget:1000000,
   projectFilter:'all', categoryFilter:'all', fileCategoryFilter:'all', budgetCategoryFilter:'all',
   defaultTeam:[
