@@ -465,7 +465,7 @@ async function sheetsDelete(sheetName,rowIdx){try{const r=await gapi.client.shee
 
 <script>
 // DATA LOADING
-async function loadAllData(){await Promise.all([loadSettings(),loadTeam(),loadCategories(),loadProjects(),loadMeetings(),loadBudget(),loadFiles(),loadBooths(),loadBoothChecklist(),loadThemes(),loadNotices(),loadSchedule()]);renderAll()}
+async function loadAllData(){await Promise.all([loadSettings(),loadTeam(),loadCategories(),loadProjects(),loadMeetings(),loadBudget(),loadFiles(),loadBooths(),loadBoothChecklist(),loadThemes(),loadNotices(),loadSchedule(),loadComments()]);renderAll()}
 async function loadSettings(){const rows=await sheetsGet('settings!A2:B');if(rows.length===0){await sheetsAppend('settings!A:B',[['totalBudget','1000000']])}else{rows.forEach(r=>{if(r[0]==='totalBudget')state.totalBudget=parseInt(r[1])||1000000})}}
 async function loadTeam(){const rows=await sheetsGet('team!A2:C');if(rows.length===0){state.team=[...state.defaultTeam];await sheetsAppend('team!A:C',state.defaultTeam.map(m=>[m.name,m.dept,m.role]))}else{state.team=rows.map(r=>({name:r[0]||'',dept:r[1]||'',role:r[2]||''}))}}
 async function loadCategories(){const rows=await sheetsGet('categories!A2:A');if(rows.length===0){state.categories=[...state.defaultCategories];await sheetsAppend('categories!A:A',state.defaultCategories.map(c=>[c]))}else{state.categories=rows.map(r=>r[0]).filter(Boolean)}}
