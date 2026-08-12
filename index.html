@@ -125,6 +125,7 @@ tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="projects" onclick="navigateTo('projects')"><span class="icon">📋</span> 세부 프로젝트</button>
     <button class="nav-item" data-page="files" onclick="navigateTo('files')"><span class="icon">📎</span> 파일 업로드</button>
     <button class="nav-item" data-page="meetings" onclick="navigateTo('meetings')"><span class="icon">📝</span> 회의록</button>
+    <button class="nav-item" data-page="calendar" onclick="navigateTo('calendar')"><span class="icon">📅</span> 캘린더 & 일정</button>
     <button class="nav-item" data-page="budget" onclick="navigateTo('budget')"><span class="icon">💰</span> 예산 및 집행현황</button>
   </nav>
   <main class="main-content">
@@ -204,6 +205,18 @@ tr:hover td{background:var(--bg)}
       <h2 class="page-title">회의록</h2>
       <button class="btn btn-primary" onclick="openMeetingModal()" style="margin-bottom:16px">+ 새 회의록 작성</button>
       <div id="meetingsList"></div>
+    </div>
+    <!-- CALENDAR -->
+    <div class="page" id="page-calendar">
+      <h2 class="page-title">캘린더 & 일정 관리</h2>
+      <button class="btn btn-primary" onclick="openScheduleModal()" style="margin-bottom:12px">+ 일정 추가</button>
+      <div class="card" style="max-height:50vh;overflow-y:auto" id="calendarContainer">
+        <div id="calendarGrid"></div>
+      </div>
+      <div class="card" style="margin-top:16px;overflow-x:auto">
+        <div class="card-header"><h3 class="card-title">타임라인</h3></div>
+        <div id="timelineContainer" style="overflow-x:auto;padding-bottom:12px"></div>
+      </div>
     </div>
     <!-- BUDGET -->
     <div class="page" id="page-budget">
