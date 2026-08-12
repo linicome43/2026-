@@ -724,7 +724,18 @@ function renderFiles(){
   if(list.length===0){document.getElementById('filesList').innerHTML='<div class="empty-state"><div class="icon">📎</div><p>파일 없음</p></div>';return}
   document.getElementById('filesList').innerHTML=list.map((f,i)=>{
     const desc=f.description||f.name;const author=f.author||f.uploadedBy;
-    return`<div class="file-item"><div class="file-info"><span class="file-icon">${fileIcon(f.name)}</span><div style="min-width:0"><div style="font-size:.9rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(desc)}</div><div style="font-size:.75rem;color:var(--text-secondary)">${esc(f.name)}${f.category?' · '+f.category:''}</div><div style="font-size:.75rem;color:var(--text-secondary)">👤 ${esc(author)} · ${fmtDate(f.uploadedAt)}</div></div></div><div class="file-btns"><a href="${f.url}" target="_blank" class="btn btn-secondary btn-sm">열기</a><a href="https://drive.google.com/uc?export=download&id=${f.driveId}" class="btn btn-primary btn-sm">⬇</a><button class="btn btn-danger btn-sm" onclick="deleteFile(${state.files.indexOf(f)})">✕</button></div></div>`}).join('');
+    const isImg=isImageFile(f.name);
+    const thumb=isImg?`<img src="https://drive.google.com/thumbnail?id=${f.driveId}&sz=w200" style="width:60px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid var(--border)" onclick="event.stopPropagation();previewImage('${f.driveId}','${esc(desc)}')" onerror="this.style.display='none'" alt="">`:''
+    return`<div class="file-item"><div class="file-info">${isImg?thumb:`<span class="file-icon">${fileIcon(f.name)}</span>`}<div style="min-width:0"><div style="font-size:.9rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(desc)}</div><div style="font-size:.75rem;color:var(--text-secondary)">${esc(f.name)}${f.category?' · '+f.category:''}</div><div style="font-size:.75rem;color:var(--text-secondary)">👤 ${esc(author)} · ${fmtDate(f.uploadedAt)}</div></div></div><div class="file-btns"><a href="${f.url}" target="_blank" class="btn btn-secondary btn-sm">열기</a><a href="https://drive.google.com/uc?export=download&id=${f.driveId}" class="btn btn-primary btn-sm">⬇</a><button class="btn btn-danger btn-sm" onclick="deleteFile(${state.files.indexOf(f)})">✕</button></div></div>`}).join('');
+}
+function isImageFile(name){const ext=(name||'').split('.').pop().toLowerCase();return['png','jpg','jpeg','gif','svg','webp','bmp'].includes(ext)}
+function previewImage(driveId,title){
+  const url=`https://drive.google.com/thumbnail?id=${driveId}&sz=w800`;
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;cursor:pointer';
+  overlay.innerHTML=`<div style="color:#fff;font-size:.9rem;margin-bottom:12px;font-weight:600">${title}</div><img src="${url}" style="max-width:90%;max-height:80vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.5)"><div style="color:#fff;font-size:.75rem;margin-top:12px">클릭하면 닫힙니다</div>`;
+  overlay.onclick=()=>overlay.remove();
+  document.body.appendChild(overlay);
 }
 function uploadFile(){
   const cat=document.getElementById('fileCategory').value;
