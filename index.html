@@ -695,7 +695,7 @@ function renderMeetings(){
   if(state.meetings.length===0){document.getElementById('meetingsList').innerHTML='<div class="empty-state"><div class="icon">📝</div><p>회의록 없음</p></div>';return}
   document.getElementById('meetingsList').innerHTML=state.meetings.map((m,i)=>{
     const contentId=`mc-${m.id}`;
-    return`<div class="meeting-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="meeting-date">${m.date}<span class="meeting-day">${getDayName(m.date)}</span></div><div class="meeting-title">${esc(m.title)}</div>${m.attendees?`<div class="meeting-attendees">참석: ${esc(m.attendees)}</div>`:''}</div><div class="meeting-actions"><button class="btn btn-secondary btn-sm" onclick="editMeeting(${i})">수정</button><button class="btn btn-danger btn-sm" onclick="deleteMeeting(${i})">삭제</button></div></div><div class="meeting-content" id="${contentId}">${esc(m.content)}</div><div class="meeting-expand" id="exp-${contentId}" onclick="toggleMeeting('${contentId}')">더 보기 ▼</div></div>`}).join('');
+    return`<div class="meeting-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="meeting-date">${m.date}<span class="meeting-day">${getDayName(m.date)}</span></div><div class="meeting-title">${esc(m.title)}</div>${m.attendees?`<div class="meeting-attendees">참석: ${esc(m.attendees)}</div>`:''}</div><div class="meeting-actions"><button class="btn btn-secondary btn-sm" onclick="editMeeting(${i})">수정</button><button class="btn btn-danger btn-sm" onclick="deleteMeeting(${i})">삭제</button></div></div><div class="meeting-content" id="${contentId}">${m.content}</div><div class="meeting-expand" id="exp-${contentId}" onclick="toggleMeeting('${contentId}')">더 보기 ▼</div></div>`}).join('');
   // Check overflow
   setTimeout(()=>{state.meetings.forEach(m=>{const el=document.getElementById(`mc-${m.id}`);const exp=document.getElementById(`exp-mc-${m.id}`);if(el&&el.scrollHeight>80&&exp)exp.style.display='block'})},50);
 }
@@ -706,7 +706,7 @@ function openMeetingModal(editIdx){
   document.getElementById('meetingModalTitle').textContent=isEdit?'회의록 수정':'새 회의록';
   document.getElementById('meetingDate').value=m?m.date:new Date().toISOString().split('T')[0];
   document.getElementById('meetingTitle').value=m?m.title:'';
-  document.getElementById('meetingContent').value=m?m.content:'';
+  document.getElementById('meetingContent').innerHTML=m?m.content:'';
   const checked=m?m.attendees.split(',').map(s=>s.trim()):[];
   document.getElementById('meetingAttendees').innerHTML=state.team.map(t=>`<label><input type="checkbox" value="${esc(t.name)}" ${checked.includes(t.name)?'checked':''}> ${esc(t.name)}</label>`).join('');
   openModal('meetingModal');
