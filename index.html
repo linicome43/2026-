@@ -656,6 +656,7 @@ async function addComment(){
   if(ok){state.comments.push({id,projectId,author,content,date});input.value='';renderComments(projectId);renderProjects();showToast('댓글 등록됨')}
 }
 function openProjectDetail(id){
+  if(dragHappened)return;
   const p=state.projects.find(x=>x.id===id);if(!p)return;
   document.getElementById('projectDetailTitle').textContent=p.name;
   document.getElementById('projectDetailTitle').dataset.projectId=id;
