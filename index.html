@@ -263,7 +263,22 @@ tr:hover td{background:var(--bg)}
   <div class="form-group"><label>날짜</label><input type="date" class="form-control" id="meetingDate"></div>
   <div class="form-group"><label>제목</label><input type="text" class="form-control" id="meetingTitle" placeholder="회의 제목"></div>
   <div class="form-group"><label>참석자</label><div id="meetingAttendees" class="checkbox-group"></div></div>
-  <div class="form-group"><label>내용</label><textarea class="form-control" id="meetingContent" rows="8" placeholder="회의 내용..."></textarea></div>
+  <div class="form-group"><label>내용</label>
+    <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap" id="editorToolbar">
+      <button class="btn-icon" onclick="editorCmd('bold')" title="굵게"><b>B</b></button>
+      <button class="btn-icon" onclick="editorCmd('italic')" title="기울임"><i>I</i></button>
+      <button class="btn-icon" onclick="editorCmd('underline')" title="밑줄"><u>U</u></button>
+      <select onchange="editorCmd('fontSize',this.value);this.value=''" style="font-size:.75rem;padding:2px;border:1px solid var(--border);border-radius:4px">
+        <option value="">크기</option><option value="1">작게</option><option value="3">보통</option><option value="5">크게</option><option value="7">매우 크게</option>
+      </select>
+      <select onchange="editorCmd('foreColor',this.value);this.value=''" style="font-size:.75rem;padding:2px;border:1px solid var(--border);border-radius:4px">
+        <option value="">색상</option><option value="#000000">검정</option><option value="#dc2626">빨강</option><option value="#2563eb">파랑</option><option value="#059669">초록</option><option value="#d97706">주황</option><option value="#7c3aed">보라</option>
+      </select>
+      <button class="btn-icon" onclick="editorCmd('indent')" title="들여쓰기">→</button>
+      <button class="btn-icon" onclick="editorCmd('outdent')" title="내어쓰기">←</button>
+    </div>
+    <div class="form-control" id="meetingContent" contenteditable="true" style="min-height:150px;max-height:300px;overflow-y:auto;white-space:pre-wrap"></div>
+  </div>
   <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('meetingModal')">취소</button><button class="btn btn-primary" onclick="saveMeeting()">저장</button></div>
 </div></div>
 
@@ -701,7 +716,7 @@ async function saveMeeting(){
   const editIdx=document.getElementById('meetingEditId').value;
   const date=document.getElementById('meetingDate').value;
   const title=document.getElementById('meetingTitle').value.trim();
-  const content=document.getElementById('meetingContent').value.trim();
+  const content=document.getElementById('meetingContent').innerHTML.trim();
   const attendees=Array.from(document.querySelectorAll('#meetingAttendees input:checked')).map(c=>c.value).join(', ');
   if(!title){showToast('제목 입력');return}
   if(editIdx!==''){
@@ -1088,6 +1103,7 @@ function fileIcon(n){const e=(n||'').split('.').pop().toLowerCase();const m={pdf
 function fmtDate(d){if(!d)return'';try{return new Date(d).toLocaleDateString('ko-KR',{year:'numeric',month:'short',day:'numeric'})}catch{return d}}
 function getDayName(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('ko-KR',{weekday:'short'})}catch{return''}}
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function editorCmd(cmd,val){document.execCommand(cmd,false,val||null)}
 function openModal(id){document.getElementById(id).classList.add('active')}
 function closeModal(id){document.getElementById(id).classList.remove('active')}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
