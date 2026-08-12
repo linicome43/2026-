@@ -1033,7 +1033,7 @@ async function saveThemes(){
 }
 
 // SCHEDULE & CALENDAR
-async function loadSchedule(){const rows=await sheetsGet('schedule!A2:F');state.schedule=rows.map(r=>({id:r[0]||'',title:r[1]||'',startDate:r[2]||'',endDate:r[3]||'',color:r[4]||'#4f46e5',showTimeline:r[5]!=='false'}))}
+async function loadSchedule(){const rows=await sheetsGet('schedule!A2:F');state.schedule=rows.map(r=>({id:r[0]||'',title:r[1]||'',startDate:r[2]||'',endDate:r[3]||'',color:r[4]||'#4f46e5',showTimeline:(r[5]||'').trim().toLowerCase()!=='false'}))}
 function renderCalendar(){
   const today=new Date();const year=today.getFullYear();const month=today.getMonth();
   // Build Aug ~ Oct 2026
