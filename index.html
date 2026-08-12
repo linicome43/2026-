@@ -657,12 +657,14 @@ async function addComment(){
 function openProjectDetail(id){
   const p=state.projects.find(x=>x.id===id);if(!p)return;
   document.getElementById('projectDetailTitle').textContent=p.name;
+  document.getElementById('projectDetailTitle').dataset.projectId=id;
   let logHtml=p.progressLog?p.progressLog.split('\n').map(l=>`<div style="font-size:.83rem;padding:4px 0;border-bottom:1px solid var(--border)">${esc(l)}</div>`).join(''):'<span style="color:var(--text-secondary);font-size:.85rem">기록 없음</span>';
   document.getElementById('projectDetailContent').innerHTML=`
     <span class="badge badge-${p.status}" style="font-size:.85rem;padding:5px 14px">${statusLabel(p.status)}</span>
     <table style="font-size:.88rem;margin-top:12px"><tr><td style="font-weight:600;width:90px;padding:6px 10px 6px 0">카테고리</td><td>${esc(p.category)||'-'}</td></tr><tr><td style="font-weight:600;padding:6px 10px 6px 0">담당자</td><td>${esc(p.assignee)||'미지정'}</td></tr><tr><td style="font-weight:600;padding:6px 10px 6px 0">마감일</td><td>${p.deadline||'미정'}</td></tr><tr><td style="font-weight:600;padding:6px 10px 6px 0">상세내용</td><td style="white-space:pre-wrap">${esc(p.notes)||'-'}</td></tr><tr><td style="font-weight:600;padding:6px 10px 6px 0">진행일자</td><td>${p.progressDate||'-'}</td></tr></table>
     <div style="margin-top:12px"><strong style="font-size:.88rem">📋 진행상황 기록</strong><div style="margin-top:6px;padding:10px;background:var(--bg);border-radius:6px;max-height:200px;overflow-y:auto">${logHtml}</div></div>`;
   document.getElementById('projectDetailEditBtn').onclick=()=>{closeModal('projectDetailModal');openProjectModal(id)};
+  renderComments(id);
   openModal('projectDetailModal');
 }
 function openProjectModal(id,defaultCat){
