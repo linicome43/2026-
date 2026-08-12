@@ -712,9 +712,9 @@ async function saveProject(){
   if(editedName)p.name=editedName;
   p.status=document.getElementById('projectStatus').value;p.assignee=assignee;
   p.deadline=document.getElementById('projectDeadline').value;p.notes=document.getElementById('projectNotes').value;
-  p.category=document.getElementById('projectCategorySelect').value;p.progressDate=progressDate;
+  p.category=document.getElementById('projectCategorySelect').value;p.progressDate=progressDate;p.calSync=document.getElementById('projectCalSync').checked;
   if(newLog)p.progressLog=(p.progressLog?p.progressLog+'\n':'')+`[${progressDate}] ${newLog}`;
-  const ok=await sheetsUpdate(`projects!A${idx+2}:I${idx+2}`,[[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category,p.progressDate,p.progressLog]]);
+  const ok=await sheetsUpdate(`projects!A${idx+2}:J${idx+2}`,[[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category,p.progressDate,p.progressLog,p.calSync.toString()]]);
   if(ok){showToast('프로젝트 업데이트됨');renderAll()}closeModal('projectModal');
 }
 
