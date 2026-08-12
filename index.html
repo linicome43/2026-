@@ -1000,10 +1000,20 @@ function renderTimeline(){
   const days=[];for(let d=new Date(minD);d<=maxD;d.setDate(d.getDate()+1))days.push(new Date(d).toISOString().split('T')[0]);
   const todayStr=new Date().toISOString().split('T')[0];
   const dayWidth=32;
-  // Header dates
+  // Header: months
   let html=`<div style="min-width:${120+days.length*dayWidth}px">`;
+  html+=`<div class="timeline-months">`;
+  let curMonth='';days.forEach((d,i)=>{const m=new Date(d).toLocaleDateString('ko-KR',{month:'short'});if(m!==curMonth){curMonth=m;let count=days.filter(dd=>new Date(dd).toLocaleDateString('ko-KR',{month:'short'})===m).length;html+=`<div class="tl-month" style="width:${count*dayWidth}px">${m}</div>`}});
+  html=html.replace(/<div class="tl-month"/g,'');// rebuild properly
+  // Simpler month header
+  html=`<div style="min-width:${120+days.length*dayWidth}px">`;
+  let months=[];let prev='';days.forEach(d=>{const m=new Date(d).toLocaleDateString('ko-KR',{year:'numeric',month:'short'});if(m!==prev){months.push({name:m,count:1});prev=m}else{months[months.length-1].count++}});
+  html+=`<div style="display:flex;margin-left:120px;border-bottom:1px solid var(--border)">`;
+  months.forEach(m=>html+=`<div style="width:${m.count*dayWidth}px;font-size:.72rem;font-weight:600;padding:4px 0;text-align:center;color:var(--text)">${m.name}</div>`);
+  html+=`</div>`;
+  // Header: dates
   html+=`<div class="timeline-dates" style="margin-left:120px">`;
-  days.forEach(d=>{const dd=new Date(d);const isToday=d===todayStr;html+=`<div class="tl-date${isToday?' today':''}">${dd.getDate()}<br>${dd.toLocaleDateString('ko-KR',{weekday:'narrow'})}</div>`});
+  days.forEach(d=>{const dd=new Date(d);const isToday=d===todayStr;html+=`<div class="tl-date${isToday?' today':''}">${dd.getDate()}</div>`});
   html+=`</div>`;
   // Event rows
   events.sort((a,b)=>a.startDate.localeCompare(b.startDate));
