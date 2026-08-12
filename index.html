@@ -66,8 +66,9 @@ textarea.form-control{resize:vertical;min-height:80px}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
 th{font-weight:600;color:var(--text-secondary);font-size:.78rem;text-transform:uppercase}
 tr:hover td{background:var(--bg)}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;padding:20px}
-.modal-overlay.active{display:flex}.modal{background:var(--surface);border-radius:12px;padding:28px;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;padding:20px;pointer-events:none}
+.modal-overlay.active{display:flex;pointer-events:none}
+.modal{background:var(--surface);border-radius:12px;padding:28px;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);pointer-events:auto}
 .modal-title{font-size:1.1rem;font-weight:700;margin-bottom:20px}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 20px;border-radius:8px;font-size:.85rem;z-index:2000;opacity:0;transform:translateY(10px);transition:var(--transition)}
@@ -1096,7 +1097,7 @@ function editorCmd(cmd,val){document.execCommand(cmd,false,val||null)}
 function openModal(id){document.getElementById(id).classList.add('active')}
 function closeModal(id){document.getElementById(id).classList.remove('active')}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active'))});
+document.addEventListener('keydown',e=>{});
 window.addEventListener('load',()=>{if(typeof gapi!=='undefined')gapiLoaded();if(typeof google!=='undefined'&&google.accounts)gisLoaded();updateDday()});
 </script>
 </body>
