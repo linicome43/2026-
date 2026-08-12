@@ -970,7 +970,12 @@ function renderCalendar(){
       const isToday=mYear===today.getFullYear()&&mMonth===today.getMonth()&&day===today.getDate();
       const events=state.schedule.filter(s=>{const sd=s.startDate;const ed=s.endDate||s.startDate;return dateStr>=sd&&dateStr<=ed});
       html+=`<div class="cal-day${isToday?' today':''}" id="cal-${dateStr}"><div class="day-num">${day}</div>`;
-      events.forEach(e=>html+=`<div class="cal-event" style="background:${e.color}" onclick="openScheduleModal('${e.id}')" title="${esc(e.title)}">${esc(e.title)}</div>`);
+      events.forEach(e=>{
+        const isStart=dateStr===e.startDate;const isEnd=dateStr===(e.endDate||e.startDate);const hasRange=e.endDate&&e.endDate!==e.startDate;
+        const radius=hasRange?(isStart?'3px 0 0 3px':isEnd?'0 3px 3px 0':'0'):'3px';
+        const label=isStart?esc(e.title):'';
+        html+=`<div class="cal-event" style="border-color:${e.color};background:${e.color}30;color:${e.color};border-radius:${radius};${hasRange?'margin-'+(isStart?'right':'left')+':0;':''}${!isStart&&!isEnd&&hasRange?'margin:0 0 1px 0;border-left:none;border-right:none;':''}" onclick="openScheduleModal('${e.id}')" title="${esc(e.title)}">${label}</div>`;
+      });
       html+=`</div>`;
     }
     // Next month padding
