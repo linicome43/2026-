@@ -972,10 +972,10 @@ async function saveThemes(){
 async function loadSchedule(){const rows=await sheetsGet('schedule!A2:F');state.schedule=rows.map(r=>({id:r[0]||'',title:r[1]||'',startDate:r[2]||'',endDate:r[3]||'',color:r[4]||'#4f46e5',showTimeline:r[5]!=='false'}))}
 function renderCalendar(){
   const today=new Date();const year=today.getFullYear();const month=today.getMonth();
-  // Build 3 months: prev, current, next
+  // Build Aug ~ Oct 2026
   let html='';
-  for(let m=month-1;m<=month+2;m++){
-    const d=new Date(year,m,1);const mYear=d.getFullYear();const mMonth=d.getMonth();
+  for(let m=7;m<=9;m++){
+    const d=new Date(2026,m,1);const mYear=d.getFullYear();const mMonth=d.getMonth();
     const monthName=d.toLocaleDateString('ko-KR',{year:'numeric',month:'long'});
     html+=`<div style="margin-bottom:16px"><div style="font-weight:700;font-size:.9rem;padding:8px 0">${monthName}</div>`;
     html+=`<div class="cal-grid">`;
@@ -1096,7 +1096,6 @@ function editorCmd(cmd,val){document.execCommand(cmd,false,val||null)}
 function openModal(id){document.getElementById(id).classList.add('active')}
 function closeModal(id){document.getElementById(id).classList.remove('active')}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
-document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('active')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active'))});
 window.addEventListener('load',()=>{if(typeof gapi!=='undefined')gapiLoaded();if(typeof google!=='undefined'&&google.accounts)gisLoaded();updateDday()});
 </script>
