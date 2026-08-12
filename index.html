@@ -743,11 +743,16 @@ function renderBudget(){
   document.getElementById('budgetTotalDisplay').textContent=`₩${used.toLocaleString()} / ₩${total.toLocaleString()}`;
   document.getElementById('budgetRemaining').textContent=`잔여: ₩${rem.toLocaleString()}`;
   // Multi-color progress bar
-  let barHtml=`<div style="height:10px;display:flex;overflow:hidden;border-radius:5px;background:var(--border)">`;
-  for(const cat of Object.keys(budgetByCat)){const w=(budgetByCat[cat]/total*100).toFixed(1);barHtml+=`<div style="width:${w}%;background:${getCategoryColor(cat)};height:100%" title="${cat}: ₩${budgetByCat[cat].toLocaleString()}"></div>`}
-  barHtml+=`</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">`;
-  for(const cat of Object.keys(budgetByCat)){barHtml+=`<span style="font-size:.75rem;display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:${getCategoryColor(cat)};display:inline-block"></span>${esc(cat)} ₩${budgetByCat[cat].toLocaleString()}</span>`}
-  barHtml+=`</div>`;
+  let barHtml='';
+  if(Object.keys(budgetByCat).length>0){
+    barHtml+=`<div style="height:10px;display:flex;overflow:hidden;border-radius:5px;background:var(--border)">`;
+    for(const cat of Object.keys(budgetByCat)){const w=(budgetByCat[cat]/total*100).toFixed(1);barHtml+=`<div style="width:${w}%;background:${getCategoryColor(cat)};height:100%" title="${cat}: ₩${budgetByCat[cat].toLocaleString()}"></div>`}
+    barHtml+=`</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">`;
+    for(const cat of Object.keys(budgetByCat)){barHtml+=`<span style="font-size:.78rem;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${getCategoryColor(cat)};display:inline-block"></span>${esc(cat)} ₩${budgetByCat[cat].toLocaleString()}</span>`}
+    barHtml+=`</div>`;
+  } else {
+    barHtml=`<div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><p style="font-size:.8rem;color:var(--text-secondary);margin-top:8px">지출을 등록하면 카테고리별 현황이 표시됩니다</p>`;
+  }
   document.getElementById('budgetBarContainer').innerHTML=barHtml;
   let list=state.budget;if(state.budgetCategoryFilter!=='all')list=list.filter(b=>b.category===state.budgetCategoryFilter);
   if(list.length===0){document.getElementById('budgetTable').innerHTML='';document.getElementById('budgetEmpty').style.display='block';return}
