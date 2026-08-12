@@ -97,6 +97,22 @@ tr:hover td{background:var(--bg)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-secondary)}.empty-state .icon{font-size:2.5rem;margin-bottom:12px}
 .menu-toggle{display:none;background:none;border:none;font-size:1.3rem;cursor:pointer;padding:4px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border)}
+.cal-header{padding:6px;text-align:center;font-size:.75rem;font-weight:600;color:var(--text-secondary);background:var(--surface)}
+.cal-day{min-height:70px;padding:4px;background:var(--surface);font-size:.75rem;position:relative;vertical-align:top}
+.cal-day.today{background:var(--accent-light)}
+.cal-day .day-num{font-weight:600;margin-bottom:2px;font-size:.78rem}
+.cal-day.other-month .day-num{color:var(--border)}
+.cal-event{font-size:.65rem;padding:1px 4px;border-radius:3px;color:#fff;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.cal-event-multi{position:relative;font-size:.65rem;padding:1px 4px;border-radius:3px;color:#fff;margin-bottom:1px;white-space:nowrap;cursor:pointer}
+.timeline-wrap{display:flex;min-width:max-content}
+.timeline-dates{display:flex;border-bottom:1px solid var(--border)}
+.timeline-dates .tl-date{width:32px;text-align:center;font-size:.6rem;color:var(--text-secondary);padding:4px 0;flex-shrink:0}
+.timeline-dates .tl-date.today{background:var(--accent-light);font-weight:700;color:var(--accent)}
+.timeline-row{display:flex;align-items:center;margin-bottom:2px}
+.timeline-label{width:120px;font-size:.75rem;font-weight:500;padding:4px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.timeline-bar-area{display:flex;position:relative;flex:1}
+.timeline-bar{height:18px;border-radius:3px;position:absolute;top:2px;font-size:.6rem;color:#fff;display:flex;align-items:center;padding:0 4px;overflow:hidden;white-space:nowrap;cursor:pointer}
 @media(max-width:768px){.app-container.active{grid-template-columns:1fr}.sidebar{position:fixed;left:-280px;top:var(--header-height);bottom:0;width:260px;z-index:200;transition:left .3s ease;box-shadow:var(--shadow-lg)}.sidebar.open{left:0}.menu-toggle{display:block}.main-content{padding:16px;max-height:calc(100vh - var(--header-height))}.grid-2,.grid-3{grid-template-columns:1fr}.dday-info{flex-direction:column;text-align:center}}
 </style>
 </head>
