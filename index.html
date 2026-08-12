@@ -618,6 +618,42 @@ async function deleteProject(id){
   const ok=await sheetsDelete('projects',idx+1);
   if(ok){state.projects.splice(idx,1);showToast('프로젝트 삭제됨');renderAll()}
 }
+
+// DRAG & DROP
+function dragStart(e,id){state.dragProjectId=id;e.target.classList.add('dragging');document.getElementById('dropZones').classList.add('active')}
+function dragEnd(){state.dragProjectId=null;document.querySelectorAll('.dragging').forEach(el=>el.classList.remove('dragging'));document.getElementById('dropZones').classList.remove('active');document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('over'))}
+function dragOver(e){e.preventDefault();e.currentTarget.classList.add('over')}
+function dragLeave(e){e.currentTarget.classList.remove('over')}
+async function dropProject(e,newStatus){
+  e.preventDefault();e.currentTarget.classList.remove('over');
+  if(!state.dragProjectId)return;
+  const idx=state.projects.findIndex(p=>p.id===state.dragProjectId);if(idx===-1)return;
+  const p=state.projects[idx];
+  if(p.status===newStatus){dragEnd();return}
+  p.status=newStatus;
+  const ok=await sheetsUpdate(`projects!A${idx+2}:I${idx+2}`,[[p.id,p.name,p.status,p.assignee,p.deadline,p.notes,p.category,p.progressDate,p.progressLog]]);
+  if(ok)showToast(`"${p.name}" → ${statusLabel(newStatus)}`);
+  dragEnd();renderAll();
+}
+
+// COMMENTS
+async function loadComments(){const rows=await sheetsGet('comments!A2:E');state.comments=rows.map(r=>({id:r[0]||'',projectId:r[1]||'',author:r[2]||'',content:r[3]||'',date:r[4]||''}))}
+function renderComments(projectId){
+  const comments=state.comments.filter(c=>c.projectId===projectId).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const el=document.getElementById('projectComments');
+  if(comments.length===0){el.innerHTML='<p style="font-size:.82rem;color:var(--text-secondary)">아직 댓글이 없습니다</p>';return}
+  el.innerHTML=comments.map(c=>`<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.8rem;font-weight:600;color:var(--accent)">${esc(c.author)}</span><span style="font-size:.7rem;color:var(--text-secondary)">${c.date}</span></div><div style="font-size:.83rem;margin-top:2px">${esc(c.content)}</div></div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+async function addComment(){
+  const input=document.getElementById('commentInput');
+  const content=input.value.trim();if(!content)return;
+  const projectId=document.getElementById('projectDetailTitle').dataset.projectId;
+  if(!projectId)return;
+  const id=Date.now().toString(),author=state.user.name,date=new Date().toISOString().split('T')[0];
+  const ok=await sheetsAppend('comments!A:E',[[id,projectId,author,content,date]]);
+  if(ok){state.comments.push({id,projectId,author,content,date});input.value='';renderComments(projectId);renderProjects();showToast('댓글 등록됨')}
+}
 function openProjectDetail(id){
   const p=state.projects.find(x=>x.id===id);if(!p)return;
   document.getElementById('projectDetailTitle').textContent=p.name;
