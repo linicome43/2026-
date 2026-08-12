@@ -1007,13 +1007,9 @@ function renderCalendar(){
 function renderTimeline(){
   const el=document.getElementById('timelineContainer');
   const events=state.schedule.filter(s=>s.startDate&&s.showTimeline);
-  if(events.length===0){el.innerHTML='<p class="empty-state">타임라인에 표시할 일정이 없습니다</p>';return}
-  const allDates=events.flatMap(e=>[e.startDate,e.endDate||e.startDate]);
   const todayStr=new Date().toISOString().split('T')[0];
-  allDates.push(todayStr);
-  let minD=new Date(Math.min(...allDates.map(d=>new Date(d))));
-  let maxD=new Date(Math.max(...allDates.map(d=>new Date(d))));
-  minD.setDate(minD.getDate()-7);maxD.setDate(maxD.getDate()+14);
+  // Fixed range: Aug 1 to Oct 31
+  let minD=new Date('2026-08-01');let maxD=new Date('2026-10-31');
   const days=[];for(let d=new Date(minD);d<=maxD;d.setDate(d.getDate()+1))days.push(new Date(d).toISOString().split('T')[0]);
   const dayWidth=32;
   let html=`<div style="min-width:${120+days.length*dayWidth}px">`;
@@ -1024,14 +1020,13 @@ function renderTimeline(){
   html+=`<div class="timeline-dates" style="margin-left:120px">`;
   days.forEach(d=>{const dd=new Date(d);const isToday=d===todayStr;html+=`<div class="tl-date${isToday?' today':''}">${dd.getDate()}</div>`});
   html+=`</div>`;
-  events.sort((a,b)=>a.startDate.localeCompare(b.startDate));
-  events.forEach(e=>{
-    const startIdx=days.indexOf(e.startDate);
-    const endIdx=days.indexOf(e.endDate||e.startDate);
-    const left=Math.max(0,startIdx)*dayWidth;
-    const width=Math.max(1,(endIdx-startIdx+1))*dayWidth-4;
+  if(events.length===0){html+=`<div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:.85rem">타임라인에 표시할 일정을 추가하세요</div>`}
+  else{events.sort((a,b)=>a.startDate.localeCompare(b.startDate));events.forEach(e=>{
+    const startIdx=days.indexOf(e.startDate);const endIdx=days.indexOf(e.endDate||e.startDate);
+    if(startIdx<0&&endIdx<0)return;
+    const left=Math.max(0,startIdx)*dayWidth;const width=Math.max(1,((endIdx>=0?endIdx:days.length-1)-(startIdx>=0?startIdx:0)+1))*dayWidth-4;
     html+=`<div class="timeline-row"><div class="timeline-label">${esc(e.title)}</div><div class="timeline-bar-area" style="height:22px;position:relative"><div class="timeline-bar" style="left:${left}px;width:${width}px;background:${e.color}" onclick="openScheduleModal('${e.id}')">${esc(e.title)}</div></div></div>`;
-  });
+  })}
   html+=`</div>`;
   el.innerHTML=html;
   const todayIdx=days.indexOf(todayStr);
