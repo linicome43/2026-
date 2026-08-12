@@ -198,12 +198,6 @@ tr:hover td{background:var(--bg)}
     <!-- PROJECTS -->
     <div class="page" id="page-projects">
       <h2 class="page-title">세부 프로젝트</h2>
-      <div class="drop-zones" id="dropZones">
-        <div class="drop-zone drop-zone-todo" data-status="todo" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropProject(event,'todo')">할 일</div>
-        <div class="drop-zone drop-zone-progress" data-status="progress" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropProject(event,'progress')">진행 중</div>
-        <div class="drop-zone drop-zone-done" data-status="done" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropProject(event,'done')">완료</div>
-        <div class="drop-zone drop-zone-pending" data-status="pending" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropProject(event,'pending')">보류</div>
-      </div>
       <div class="filter-bar">
         <button class="btn btn-secondary btn-sm active" data-filter="all" onclick="filterProjects('all')">전체</button>
         <button class="btn btn-secondary btn-sm" data-filter="todo" onclick="filterProjects('todo')">할 일</button>
