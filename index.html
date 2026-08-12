@@ -245,7 +245,7 @@ tr:hover td{background:var(--bg)}
       <h2 class="page-title">예산 및 집행현황</h2>
       <div class="card">
         <div class="budget-summary"><div><div class="budget-total" id="budgetTotalDisplay">₩0 / ₩1,000,000</div><div class="budget-used" id="budgetRemaining">잔여: ₩1,000,000</div></div><div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="changeTotalBudget()">총 예산 변경</button><button class="btn btn-primary" onclick="openBudgetModal()">+ 지출 추가</button></div></div>
-        <div class="progress-bar" style="margin-bottom:20px" id="budgetBarContainer"><div class="progress-fill" id="budgetProgressBar" style="width:0%"></div></div>
+        <div style="margin-bottom:20px" id="budgetBarContainer"></div>
       </div>
       <div class="filter-bar" id="budgetCategoryFilter"></div>
       <div class="card" style="margin-top:8px"><div class="card-header"><h3 class="card-title">지출 내역</h3></div>
