@@ -1036,9 +1036,9 @@ async function saveThemes(){
 async function loadSchedule(){const rows=await sheetsGet('schedule!A2:F');state.schedule=rows.map(r=>({id:r[0]||'',title:r[1]||'',startDate:r[2]||'',endDate:r[3]||'',color:r[4]||'#4f46e5',showTimeline:(r[5]||'').trim().toLowerCase()!=='false'}))}
 function renderCalendar(){
   const today=new Date();const year=today.getFullYear();const month=today.getMonth();
-  // Build Aug ~ Oct 2026
+  // Build Aug ~ Nov 2026
   let html='';
-  for(let m=7;m<=9;m++){
+  for(let m=7;m<=10;m++){
     const d=new Date(2026,m,1);const mYear=d.getFullYear();const mMonth=d.getMonth();
     const monthName=d.toLocaleDateString('ko-KR',{year:'numeric',month:'long'});
     html+=`<div style="margin-bottom:16px"><div style="font-weight:700;font-size:.9rem;padding:8px 0">${monthName}</div>`;
@@ -1074,8 +1074,8 @@ function renderTimeline(){
   const el=document.getElementById('timelineContainer');
   const events=state.schedule.filter(s=>s.startDate&&s.showTimeline);
   const todayStr=new Date().toISOString().split('T')[0];
-  // Fixed range: Aug 1 to Oct 31
-  let minD=new Date('2026-08-01');let maxD=new Date('2026-10-31');
+  // Fixed range: Aug 1 to Nov 30
+  let minD=new Date('2026-08-01');let maxD=new Date('2026-11-30');
   const days=[];for(let d=new Date(minD);d<=maxD;d.setDate(d.getDate()+1))days.push(new Date(d).toISOString().split('T')[0]);
   const dayWidth=32;
   let html=`<div style="min-width:${120+days.length*dayWidth}px">`;
