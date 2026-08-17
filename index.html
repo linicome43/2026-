@@ -161,13 +161,12 @@ tr:hover td{background:var(--bg)}
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <h2 class="page-title">대시보드</h2>
-      <div class="card dday-banner"><div class="dday-info"><div class="dday-event">📅 선교대회 일시: <strong>2026년 10월 18일 (일)</strong></div><div class="dday-count" id="ddayCount">D-00</div></div><div id="themeDisplay" style="margin-top:10px;font-size:.88rem"></div></div>
-      <div class="card" style="margin-top:12px"><div class="card-header"><h3 class="card-title">📌 주제 후보</h3><button class="btn btn-secondary btn-sm" onclick="openThemeModal()">수정</button></div><div id="themeList"></div></div>
+      <div class="card dday-banner"><div class="dday-info"><div class="dday-event">📅 선교대회 일시: <strong>2026년 10월 18일 (일)</strong></div><div class="dday-count" id="ddayCount">D-00</div></div><div style="margin-top:10px;font-size:.88rem"><div>주제: <strong id="themeTitle" contenteditable="false">타지키스탄 생수교회를 위한 선교대회</strong></div><div>주제말씀: <strong id="themeVerse" contenteditable="false"></strong></div><button class="btn btn-sm" style="margin-top:6px;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="editThemeInfo()">수정</button></div></div>
+      <div class="card" style="margin-top:12px"><div class="card-header"><h3 class="card-title">📢 공지사항</h3><button class="btn btn-secondary btn-sm" onclick="openNoticeModal()">+ 작성</button></div><div id="noticeList"><p class="empty-state">공지사항이 없습니다</p></div><div id="noticeMore" style="display:none;text-align:center;margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="showAllNotices()">전체 보기</button></div></div>
       <div class="grid-2" style="margin-top:16px">
         <div class="card"><div class="card-header"><h3 class="card-title">프로젝트 진행상황</h3></div><div id="dashboardProgress"></div></div>
         <div class="card"><div class="card-header"><h3 class="card-title">예산 현황</h3></div><div id="dashboardBudget"><div class="budget-summary"><span class="budget-total" id="budgetOverview">₩0 / ₩1,000,000</span></div><div class="progress-bar"><div class="progress-fill" id="budgetBar" style="width:0%"></div></div></div></div>
       </div>
-      <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">📢 공지사항</h3><button class="btn btn-secondary btn-sm" onclick="openNoticeModal()">+ 작성</button></div><div id="noticeList"><p class="empty-state">공지사항이 없습니다</p></div><div id="noticeMore" style="display:none;text-align:center;margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="showAllNotices()">전체 보기</button></div></div>
       <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">최근 회의록</h3></div><div id="dashboardMeetings"><p class="empty-state">회의록이 없습니다</p></div></div>
       <div class="card" style="margin-top:16px"><div class="card-header"><h3 class="card-title">업데이트 항목</h3></div><div id="dashboardRecent"><p class="empty-state">수정 내역이 없습니다</p></div></div>
     </div>
