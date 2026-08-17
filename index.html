@@ -1004,31 +1004,39 @@ async function deleteBooth(){
 }
 
 // THEMES
-async function loadThemes(){const rows=await sheetsGet('settings!A2:B');rows.forEach(r=>{if(r[0]==='theme1')state.themes[0]=r[1]||'';if(r[0]==='theme2')state.themes[1]=r[1]||'';if(r[0]==='theme3')state.themes[2]=r[1]||''})}
+async function loadThemes(){const rows=await sheetsGet('settings!A2:B');state.themeTitle='타지키스탄 생수교회를 위한 선교대회';state.themeVerse='';rows.forEach(r=>{if(r[0]==='themeTitle')state.themeTitle=r[1]||'';if(r[0]==='themeVerse')state.themeVerse=r[1]||''})}
 function renderThemes(){
-  const list=state.themes.filter(Boolean);
-  document.getElementById('themeList').innerHTML=list.length?list.map((t,i)=>`<div style="padding:6px 0;font-size:.9rem;border-bottom:1px solid var(--border)"><span style="color:var(--accent);font-weight:600">${i+1}안</span> ${esc(t)}</div>`).join(''):'<p style="color:var(--text-secondary);font-size:.85rem">주제 후보를 등록해주세요</p>';
-  // D-Day banner theme display
-  const confirmed=list.length>0?list[0]:'미정';
-  document.getElementById('themeDisplay').innerHTML=`🎯 주제: <strong>${esc(list.length===1?list[0]:'후보 '+list.length+'개 검토 중')}</strong>`;
+  document.getElementById('themeTitle').textContent=state.themeTitle;
+  document.getElementById('themeVerse').textContent=state.themeVerse;
 }
-function openThemeModal(){
-  document.getElementById('theme1').value=state.themes[0]||'';
-  document.getElementById('theme2').value=state.themes[1]||'';
-  document.getElementById('theme3').value=state.themes[2]||'';
-  openModal('themeModal');
+function editThemeInfo(){
+  const titleEl=document.getElementById('themeTitle');
+  const verseEl=document.getElementById('themeVerse');
+  const isEditing=titleEl.contentEditable==='true';
+  if(isEditing){
+    // Save
+    state.themeTitle=titleEl.textContent.trim();
+    state.themeVerse=verseEl.textContent.trim();
+    titleEl.contentEditable='false';verseEl.contentEditable='false';
+    titleEl.style.borderBottom='';verseEl.style.borderBottom='';
+    saveThemeInfo();
+  } else {
+    // Enable editing
+    titleEl.contentEditable='true';verseEl.contentEditable='true';
+    titleEl.style.borderBottom='1px dashed rgba(255,255,255,.6)';
+    verseEl.style.borderBottom='1px dashed rgba(255,255,255,.6)';
+    titleEl.focus();
+  }
 }
-async function saveThemes(){
-  state.themes=[document.getElementById('theme1').value.trim(),document.getElementById('theme2').value.trim(),document.getElementById('theme3').value.trim()];
-  // Save to settings sheet
+async function saveThemeInfo(){
   const allRows=await sheetsGet('settings!A2:B');
-  const updates=[['theme1',state.themes[0]],['theme2',state.themes[1]],['theme3',state.themes[2]]];
+  const updates=[['themeTitle',state.themeTitle],['themeVerse',state.themeVerse]];
   for(const [key,val] of updates){
     const rowIdx=allRows.findIndex(r=>r[0]===key);
     if(rowIdx>=0){await sheetsUpdate(`settings!A${rowIdx+2}:B${rowIdx+2}`,[[key,val]])}
     else{await sheetsAppend('settings!A:B',[[key,val]])}
   }
-  showToast('주제 후보 저장됨');renderThemes();closeModal('themeModal');
+  showToast('주제 정보 저장됨');
 }
 
 // SCHEDULE & CALENDAR
