@@ -1074,7 +1074,7 @@ function renderGoods(){
     <td>${g.thumbUrl?`<img src="${g.thumbUrl}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="previewImage('${g.thumbId||''}','${esc(g.name)}')" onerror="this.style.display='none'">`:'-'}</td>
     <td style="font-weight:600">${esc(g.name)}</td>
     <td><span class="badge ${g.type==='완제품'?'badge-done':'badge-progress'}">${esc(g.type)}</span></td>
-    <td style="font-size:.8rem">${g.prices.map(p=>`${p.qty}개 × ₩${Number(p.price).toLocaleString()} <span style="color:var(--accent);font-weight:600">= ₩${(Number(p.qty)*Number(p.price)).toLocaleString()}</span>`).join('<br>')}</td>
+    <td style="font-size:.8rem">${g.prices.map(p=>{const cost=Number(p.qty)*Number(p.price);const revenue=Number(p.qty)*Number(p.sellPrice||0);const profit=revenue-cost;return`<div>${p.qty}개 × ₩${Number(p.price).toLocaleString()} = <strong>₩${cost.toLocaleString()}</strong>${p.sellPrice?` | 판매 ₩${Number(p.sellPrice).toLocaleString()} → <span style="color:${profit>=0?'var(--success)':'var(--danger)'}">수익 ₩${profit.toLocaleString()}</span>`:''}</div>`}).join('')}</td>
     <td>${g.link?`<a href="${g.link}" target="_blank" style="color:var(--accent);font-size:.8rem">링크 열기</a>`:'-'}</td>
     <td style="font-size:.8rem;max-width:150px;white-space:pre-wrap">${esc(g.note)||'-'}</td>
     <td><button class="btn btn-secondary btn-sm" onclick="openGoodsModal(${i})">수정</button></td>
