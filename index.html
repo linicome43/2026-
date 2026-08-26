@@ -780,8 +780,10 @@ function renderMeetings(){
     const contentId=`mc-${m.id}`;
     return`<div class="meeting-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="meeting-date">${m.date}<span class="meeting-day">${getDayName(m.date)}</span></div><div class="meeting-title">${esc(m.title)}</div>${m.attendees?`<div class="meeting-attendees">참석: ${esc(m.attendees)}</div>`:''}</div><div class="meeting-actions"><button class="btn btn-secondary btn-sm" onclick="editMeeting(${i})">수정</button><button class="btn btn-danger btn-sm" onclick="deleteMeeting(${i})">삭제</button></div></div><div class="meeting-content" id="${contentId}">${m.content}</div><div class="meeting-expand" id="exp-${contentId}" onclick="toggleMeeting('${contentId}')">더 보기 ▼</div></div>`}).join('');
   // Show expand button only if content overflows
-  setTimeout(()=>{state.meetings.forEach(m=>{const el=document.getElementById(`mc-${m.id}`);const exp=document.getElementById(`exp-mc-${m.id}`);if(el&&exp){if(el.scrollHeight>80)exp.style.display='block';else exp.style.display='none'}})},100);
+  setTimeout(checkMeetingExpand,150);
 }
+function checkMeetingExpand(){state.meetings.forEach(m=>{const el=document.getElementById(`mc-${m.id}`);const exp=document.getElementById(`exp-mc-${m.id}`);if(el&&exp){if(el.scrollHeight>80)exp.style.display='block';else exp.style.display='none'}})}
+
 function toggleMeeting(id){const el=document.getElementById(id);const exp=document.getElementById('exp-'+id);if(el.classList.contains('expanded')){el.classList.remove('expanded');exp.textContent='더 보기 ▼'}else{el.classList.add('expanded');exp.textContent='접기 ▲'}}
 function toggleAllAttendees(){const boxes=document.querySelectorAll('#meetingAttendees input[type="checkbox"]');const allChecked=Array.from(boxes).every(b=>b.checked);boxes.forEach(b=>b.checked=!allChecked)}
 function openMeetingModal(editIdx){
