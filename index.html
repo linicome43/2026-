@@ -268,7 +268,7 @@ tr:hover td{background:var(--bg)}
   <input type="hidden" id="meetingEditId">
   <div class="form-group"><label>날짜</label><input type="date" class="form-control" id="meetingDate"></div>
   <div class="form-group"><label>제목</label><input type="text" class="form-control" id="meetingTitle" placeholder="회의 제목"></div>
-  <div class="form-group"><label>참석자</label><div id="meetingAttendees" class="checkbox-group"></div></div>
+  <div class="form-group"><label>참석자 <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="toggleAllAttendees()">전체 선택/해제</button></label><div id="meetingAttendees" class="checkbox-group"></div></div>
   <div class="form-group"><label>내용</label>
     <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap" id="editorToolbar">
       <button class="btn-icon" onclick="editorCmd('bold')" title="굵게"><b>B</b></button>
