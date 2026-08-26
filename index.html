@@ -755,6 +755,15 @@ function previewImage(driveId,title){
   overlay.onclick=()=>overlay.remove();
   document.body.appendChild(overlay);
 }
+function previewGoodsImage(thumbUrl,title){
+  // thumbUrl은 w200 → w1200으로 교체해서 큰 이미지 보기
+  const url=thumbUrl.replace('sz=w200','sz=w1200');
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;cursor:pointer';
+  overlay.innerHTML=`<div style="color:#fff;font-size:.9rem;margin-bottom:12px;font-weight:600">${title}</div><img src="${url}" style="max-width:90%;max-height:80vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.5)" onerror="this.src='${thumbUrl}'"><div style="color:#fff;font-size:.75rem;margin-top:12px">클릭하면 닫힙니다</div>`;
+  overlay.onclick=()=>overlay.remove();
+  document.body.appendChild(overlay);
+}
 function uploadFile(){
   const cat=document.getElementById('fileCategory').value;
   const description=document.getElementById('fileDescription').value.trim();
