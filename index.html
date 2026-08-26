@@ -1070,11 +1070,11 @@ async function loadGoods(){const rows=await sheetsGet('goods!A2:G');state.goods=
 function renderGoods(){
   const el=document.getElementById('goodsList');
   if(state.goods.length===0){el.innerHTML='<div class="empty-state"><div class="icon">🛍️</div><p>등록된 굿즈가 없습니다</p></div>';return}
-  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>썸네일</th><th>굿즈명</th><th>구분</th><th>수량별 가격</th><th>링크</th><th>비고</th><th>관리</th></tr></thead><tbody>${state.goods.map((g,i)=>`<tr>
+  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>썸네일</th><th>굿즈명</th><th>구분</th><th>수량 / 1개당 가격 / 총금액</th><th>링크</th><th>비고</th><th>관리</th></tr></thead><tbody>${state.goods.map((g,i)=>`<tr>
     <td>${g.thumbUrl?`<img src="${g.thumbUrl}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="previewImage('${g.thumbId||''}','${esc(g.name)}')" onerror="this.style.display='none'">`:'-'}</td>
     <td style="font-weight:600">${esc(g.name)}</td>
     <td><span class="badge ${g.type==='완제품'?'badge-done':'badge-progress'}">${esc(g.type)}</span></td>
-    <td style="font-size:.8rem">${g.prices.map(p=>`${p.qty}개: ₩${Number(p.price).toLocaleString()}`).join('<br>')}</td>
+    <td style="font-size:.8rem">${g.prices.map(p=>`${p.qty}개 × ₩${Number(p.price).toLocaleString()} <span style="color:var(--accent);font-weight:600">= ₩${(Number(p.qty)*Number(p.price)).toLocaleString()}</span>`).join('<br>')}</td>
     <td>${g.link?`<a href="${g.link}" target="_blank" style="color:var(--accent);font-size:.8rem">링크 열기</a>`:'-'}</td>
     <td style="font-size:.8rem;max-width:150px;white-space:pre-wrap">${esc(g.note)||'-'}</td>
     <td><button class="btn btn-secondary btn-sm" onclick="openGoodsModal(${i})">수정</button></td>
