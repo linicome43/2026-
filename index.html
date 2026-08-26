@@ -1061,6 +1061,77 @@ async function saveThemeInfo(){
   showToast('저장됨');
 }
 
+// GOODS
+async function loadGoods(){const rows=await sheetsGet('goods!A2:G');state.goods=rows.map(r=>({id:r[0]||'',name:r[1]||'',type:r[2]||'완제품',prices:r[3]?JSON.parse(r[3]):[],link:r[4]||'',note:r[5]||'',thumbUrl:r[6]||'',thumbId:''}))}
+function renderGoods(){
+  const el=document.getElementById('goodsList');
+  if(state.goods.length===0){el.innerHTML='<div class="empty-state"><div class="icon">🛍️</div><p>등록된 굿즈가 없습니다</p></div>';return}
+  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>썸네일</th><th>굿즈명</th><th>구분</th><th>수량별 가격</th><th>링크</th><th>비고</th><th>관리</th></tr></thead><tbody>${state.goods.map((g,i)=>`<tr>
+    <td>${g.thumbUrl?`<img src="${g.thumbUrl}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="previewImage('${g.thumbId||''}','${esc(g.name)}')" onerror="this.style.display='none'">`:'-'}</td>
+    <td style="font-weight:600">${esc(g.name)}</td>
+    <td><span class="badge ${g.type==='완제품'?'badge-done':'badge-progress'}">${esc(g.type)}</span></td>
+    <td style="font-size:.8rem">${g.prices.map(p=>`${p.qty}개: ₩${Number(p.price).toLocaleString()}`).join('<br>')}</td>
+    <td>${g.link?`<a href="${g.link}" target="_blank" style="color:var(--accent);font-size:.8rem">링크 열기</a>`:'-'}</td>
+    <td style="font-size:.8rem;max-width:150px;white-space:pre-wrap">${esc(g.note)||'-'}</td>
+    <td><button class="btn btn-secondary btn-sm" onclick="openGoodsModal(${i})">수정</button></td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+function openGoodsModal(editIdx){
+  const isEdit=editIdx!==undefined;const g=isEdit?state.goods[editIdx]:null;
+  document.getElementById('goodsEditId').value=isEdit?editIdx:'';
+  document.getElementById('goodsModalTitle').textContent=isEdit?'굿즈 수정':'굿즈 추가';
+  document.getElementById('goodsName').value=g?g.name:'';
+  document.getElementById('goodsType').value=g?g.type:'완제품';
+  document.getElementById('goodsLink').value=g?g.link:'';
+  document.getElementById('goodsNote').value=g?g.note:'';
+  document.getElementById('goodsThumbId').value=g?g.thumbId:'';
+  document.getElementById('goodsThumbUrl').value=g?g.thumbUrl:'';
+  const prev=document.getElementById('goodsThumbPreview');
+  if(g&&g.thumbUrl){prev.src=g.thumbUrl;prev.style.display='block'}else{prev.style.display='none'}
+  document.getElementById('deleteGoodsBtn').style.display=isEdit?'inline-block':'none';
+  // Render price rows
+  const prices=g?g.prices:[];
+  document.getElementById('priceRows').innerHTML=prices.map((p,i)=>makePriceRow(p.qty,p.price,i)).join('')||makePriceRow('','',0);
+  openModal('goodsModal');
+}
+function makePriceRow(qty,price,i){return`<div style="display:flex;gap:8px;margin-bottom:6px" id="pricerow-${i}"><input type="number" class="form-control" placeholder="수량" value="${qty}" style="width:100px" onchange="updatePriceRow()"><input type="number" class="form-control" placeholder="가격(원)" value="${price}" style="flex:1" onchange="updatePriceRow()"><button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button></div>`}
+function addPriceRow(){const rows=document.getElementById('priceRows');const i=rows.children.length;rows.insertAdjacentHTML('beforeend',makePriceRow('','',i))}
+function removePriceRow(i){const el=document.getElementById('pricerow-'+i);if(el)el.remove()}
+function updatePriceRow(){}
+function getPrices(){return Array.from(document.getElementById('priceRows').children).map(row=>{const inputs=row.querySelectorAll('input');return{qty:inputs[0].value,price:inputs[1].value}}).filter(p=>p.qty||p.price)}
+async function saveGoods(){
+  const editIdx=document.getElementById('goodsEditId').value;
+  const name=document.getElementById('goodsName').value.trim();
+  if(!name){showToast('굿즈명 입력');return}
+  const g={id:editIdx!==''?state.goods[+editIdx].id:Date.now().toString(),name,type:document.getElementById('goodsType').value,prices:getPrices(),link:document.getElementById('goodsLink').value.trim(),note:document.getElementById('goodsNote').value.trim(),thumbUrl:document.getElementById('goodsThumbUrl').value,thumbId:document.getElementById('goodsThumbId').value};
+  const row=[g.id,g.name,g.type,JSON.stringify(g.prices),g.link,g.note,g.thumbUrl];
+  if(editIdx!==''){
+    const i=+editIdx;state.goods[i]=g;
+    await sheetsUpdate(`goods!A${i+2}:G${i+2}`,[row]);showToast('수정됨');
+  } else {
+    const ok=await sheetsAppend('goods!A:G',[row]);if(ok){state.goods.push(g);showToast('굿즈 추가됨')}
+  }
+  renderGoods();closeModal('goodsModal');
+}
+async function deleteGoods(){
+  const i=+document.getElementById('goodsEditId').value;
+  if(!confirm('삭제하시겠습니까?'))return;
+  const ok=await sheetsDelete('goods',i+1);if(ok){state.goods.splice(i,1);showToast('삭제됨');renderGoods()}
+  closeModal('goodsModal');
+}
+function uploadGoodsThumb(){
+  const input=document.createElement('input');input.type='file';input.accept='image/*';
+  input.onchange=async e=>{const file=e.target.files[0];if(!file)return;showToast('업로드 중...');
+    try{const meta={name:'[굿즈썸네일]'+file.name,parents:[CONFIG.DRIVE_FOLDER_ID]};const form=new FormData();form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));form.append('file',file);
+    const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{Authorization:`Bearer ${state.accessToken}`},body:form});
+    if(!resp.ok)throw new Error();const r=await resp.json();
+    const thumbUrl=`https://drive.google.com/thumbnail?id=${r.id}&sz=w200`;
+    document.getElementById('goodsThumbId').value=r.id;
+    document.getElementById('goodsThumbUrl').value=thumbUrl;
+    const prev=document.getElementById('goodsThumbPreview');prev.src=thumbUrl;prev.style.display='block';
+    showToast('썸네일 업로드됨')}catch(err){showToast('업로드 실패')}};input.click();
+}
+
 // SCHEDULE & CALENDAR
 async function loadSchedule(){const rows=await sheetsGet('schedule!A2:F');state.schedule=rows.map(r=>({id:r[0]||'',title:r[1]||'',startDate:r[2]||'',endDate:r[3]||'',color:r[4]||'#4f46e5',showTimeline:(r[5]||'').trim().toLowerCase()!=='false'}))}
 function renderCalendar(){
