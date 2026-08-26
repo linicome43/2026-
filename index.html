@@ -1129,11 +1129,13 @@ function uploadGoodsThumb(){
     try{const meta={name:'[굿즈썸네일]'+file.name,parents:[CONFIG.DRIVE_FOLDER_ID]};const form=new FormData();form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));form.append('file',file);
     const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{Authorization:`Bearer ${state.accessToken}`},body:form});
     if(!resp.ok)throw new Error();const r=await resp.json();
+    // 공개 읽기 권한 설정
+    await fetch(`https://www.googleapis.com/drive/v3/files/${r.id}/permissions`,{method:'POST',headers:{Authorization:`Bearer ${state.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
     const thumbUrl=`https://drive.google.com/thumbnail?id=${r.id}&sz=w200`;
     document.getElementById('goodsThumbId').value=r.id;
     document.getElementById('goodsThumbUrl').value=thumbUrl;
     const prev=document.getElementById('goodsThumbPreview');prev.src=thumbUrl;prev.style.display='block';
-    showToast('썸네일 업로드됨')}catch(err){showToast('업로드 실패')}};input.click();
+    showToast('썸네일 업로드됨')}catch(err){console.error(err);showToast('업로드 실패')}};input.click();
 }
 
 // SCHEDULE & CALENDAR
