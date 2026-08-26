@@ -1098,10 +1098,8 @@ function openGoodsModal(editIdx){
   document.getElementById('priceRows').innerHTML=prices.map((p,i)=>makePriceRow(p.qty,p.price,i)).join('')||makePriceRow('','',0);
   openModal('goodsModal');
 }
-function makePriceRow(qty,price,i){return`<div style="display:flex;gap:8px;margin-bottom:6px" id="pricerow-${i}"><input type="number" class="form-control" placeholder="수량" value="${qty}" style="width:100px" onchange="updatePriceRow()"><input type="number" class="form-control" placeholder="가격(원)" value="${price}" style="flex:1" onchange="updatePriceRow()"><button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button></div>`}
-function addPriceRow(){const rows=document.getElementById('priceRows');const i=rows.children.length;rows.insertAdjacentHTML('beforeend',makePriceRow('','',i))}
-function removePriceRow(i){const el=document.getElementById('pricerow-'+i);if(el)el.remove()}
-function updatePriceRow(){}
+function makePriceRow(qty,price,i){const total=qty&&price?Number(qty)*Number(price):0;return`<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center" id="pricerow-${i}"><input type="number" class="form-control" placeholder="수량" value="${qty}" style="width:90px" oninput="calcTotal(this)"><span style="font-size:.8rem;color:var(--text-secondary)">개</span><input type="number" class="form-control" placeholder="1개당 가격(원)" value="${price}" style="flex:1" oninput="calcTotal(this)"><span style="font-size:.8rem;color:var(--text-secondary)">원</span><span style="font-size:.8rem;font-weight:600;color:var(--accent);min-width:80px;text-align:right" class="price-total">${total?'= ₩'+total.toLocaleString():''}</span><button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button></div>`}
+function calcTotal(el){const row=el.closest('[id^="pricerow"]');if(!row)return;const inputs=row.querySelectorAll('input');const qty=Number(inputs[0].value)||0;const price=Number(inputs[1].value)||0;const span=row.querySelector('.price-total');span.textContent=qty&&price?'= ₩'+(qty*price).toLocaleString():''}
 function getPrices(){return Array.from(document.getElementById('priceRows').children).map(row=>{const inputs=row.querySelectorAll('input');return{qty:inputs[0].value,price:inputs[1].value}}).filter(p=>p.qty||p.price)}
 async function saveGoods(){
   const editIdx=document.getElementById('goodsEditId').value;
