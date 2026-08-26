@@ -464,7 +464,7 @@ function handleToken(r){if(r.error){console.log('Token silent fail:',r.error);re
 function handleLogin(){if(!state.tokenClient){showToast('로드 중...');return}state.tokenClient.requestAccessToken({prompt:'consent'})}
 function handleLogout(){if(state.accessToken)google.accounts.oauth2.revoke(state.accessToken);state.user=null;state.accessToken=null;localStorage.removeItem('user_info');document.getElementById('loginScreen').style.display='flex';document.getElementById('appContainer').classList.remove('active')}
 function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appContainer').classList.add('active');document.getElementById('userName').textContent=state.user.name;document.getElementById('userAvatar').src=state.user.picture||'';updateDday();loadAllData()}
-function navigateTo(p){state.currentPage=p;document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('active',e.dataset.page===p));document.querySelectorAll('.page').forEach(e=>e.classList.toggle('active',e.id===`page-${p}`));document.getElementById('sidebar').classList.remove('open')}
+function navigateTo(p){state.currentPage=p;document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('active',e.dataset.page===p));document.querySelectorAll('.page').forEach(e=>e.classList.toggle('active',e.id===`page-${p}`));document.getElementById('sidebar').classList.remove('open');if(p==='meetings')setTimeout(checkMeetingExpand,100)}
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open')}
 
 // SHEETS HELPERS
