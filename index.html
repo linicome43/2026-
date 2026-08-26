@@ -756,6 +756,7 @@ function renderMeetings(){
   setTimeout(()=>{state.meetings.forEach(m=>{const el=document.getElementById(`mc-${m.id}`);const exp=document.getElementById(`exp-mc-${m.id}`);if(el&&exp){if(el.scrollHeight>80)exp.style.display='block';else exp.style.display='none'}})},100);
 }
 function toggleMeeting(id){const el=document.getElementById(id);const exp=document.getElementById('exp-'+id);if(el.classList.contains('expanded')){el.classList.remove('expanded');exp.textContent='더 보기 ▼'}else{el.classList.add('expanded');exp.textContent='접기 ▲'}}
+function toggleAllAttendees(){const boxes=document.querySelectorAll('#meetingAttendees input[type="checkbox"]');const allChecked=Array.from(boxes).every(b=>b.checked);boxes.forEach(b=>b.checked=!allChecked)}
 function openMeetingModal(editIdx){
   const isEdit=editIdx!==undefined;const m=isEdit?state.meetings[editIdx]:null;
   document.getElementById('meetingEditId').value=isEdit?editIdx:'';
