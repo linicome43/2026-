@@ -1024,39 +1024,41 @@ async function deleteBooth(){
 }
 
 // THEMES
-async function loadThemes(){const rows=await sheetsGet('settings!A2:B');state.themeTitle='타지키스탄 생수교회를 위한 선교대회';state.themeVerse='';rows.forEach(r=>{if(r[0]==='themeTitle')state.themeTitle=r[1]||'';if(r[0]==='themeVerse')state.themeVerse=r[1]||''})}
+async function loadThemes(){const rows=await sheetsGet('settings!A2:B');state.themeTitle='타지키스탄 생수교회를 위한 선교대회';state.themeVerse='';state.themeConcept='';rows.forEach(r=>{if(r[0]==='themeTitle')state.themeTitle=r[1]||'';if(r[0]==='themeVerse')state.themeVerse=r[1]||'';if(r[0]==='themeConcept')state.themeConcept=r[1]||''})}
 function renderThemes(){
   document.getElementById('themeTitle').textContent=state.themeTitle;
   document.getElementById('themeVerse').textContent=state.themeVerse;
+  document.getElementById('themeConcept').textContent=state.themeConcept;
 }
 function editThemeInfo(){
   const titleEl=document.getElementById('themeTitle');
   const verseEl=document.getElementById('themeVerse');
+  const conceptEl=document.getElementById('themeConcept');
   const isEditing=titleEl.contentEditable==='true';
   if(isEditing){
-    // Save
     state.themeTitle=titleEl.textContent.trim();
     state.themeVerse=verseEl.textContent.trim();
-    titleEl.contentEditable='false';verseEl.contentEditable='false';
-    titleEl.style.borderBottom='';verseEl.style.borderBottom='';
+    state.themeConcept=conceptEl.textContent.trim();
+    titleEl.contentEditable='false';verseEl.contentEditable='false';conceptEl.contentEditable='false';
+    titleEl.style.borderBottom='';verseEl.style.borderBottom='';conceptEl.style.borderBottom='';
     saveThemeInfo();
   } else {
-    // Enable editing
-    titleEl.contentEditable='true';verseEl.contentEditable='true';
+    titleEl.contentEditable='true';verseEl.contentEditable='true';conceptEl.contentEditable='true';
     titleEl.style.borderBottom='1px dashed rgba(255,255,255,.6)';
     verseEl.style.borderBottom='1px dashed rgba(255,255,255,.6)';
+    conceptEl.style.borderBottom='1px dashed rgba(255,255,255,.6)';
     titleEl.focus();
   }
 }
 async function saveThemeInfo(){
   const allRows=await sheetsGet('settings!A2:B');
-  const updates=[['themeTitle',state.themeTitle],['themeVerse',state.themeVerse]];
+  const updates=[['themeTitle',state.themeTitle],['themeVerse',state.themeVerse],['themeConcept',state.themeConcept]];
   for(const [key,val] of updates){
     const rowIdx=allRows.findIndex(r=>r[0]===key);
     if(rowIdx>=0){await sheetsUpdate(`settings!A${rowIdx+2}:B${rowIdx+2}`,[[key,val]])}
     else{await sheetsAppend('settings!A:B',[[key,val]])}
   }
-  showToast('주제 정보 저장됨');
+  showToast('저장됨');
 }
 
 // SCHEDULE & CALENDAR
