@@ -1034,6 +1034,7 @@ function editThemeInfo(){
   const titleEl=document.getElementById('themeTitle');
   const verseEl=document.getElementById('themeVerse');
   const conceptEl=document.getElementById('themeConcept');
+  const btn=document.getElementById('themeEditBtn');
   const isEditing=titleEl.contentEditable==='true';
   if(isEditing){
     state.themeTitle=titleEl.textContent.trim();
@@ -1041,13 +1042,15 @@ function editThemeInfo(){
     state.themeConcept=conceptEl.textContent.trim();
     titleEl.contentEditable='false';verseEl.contentEditable='false';conceptEl.contentEditable='false';
     titleEl.style.borderBottom='';verseEl.style.borderBottom='';conceptEl.style.borderBottom='';
+    btn.textContent='수정';
     saveThemeInfo();
   } else {
     titleEl.contentEditable='true';verseEl.contentEditable='true';conceptEl.contentEditable='true';
     titleEl.style.borderBottom='1px dashed rgba(255,255,255,.6)';
     verseEl.style.borderBottom='1px dashed rgba(255,255,255,.6)';
     conceptEl.style.borderBottom='1px dashed rgba(255,255,255,.6)';
-    titleEl.focus();
+    btn.textContent='저장';
+    conceptEl.focus();
   }
 }
 async function saveThemeInfo(){
