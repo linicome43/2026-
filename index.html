@@ -1083,17 +1083,20 @@ async function saveThemeInfo(){
 async function loadGoods(){const rows=await sheetsGet('goods!A2:G');state.goods=rows.map(r=>({id:r[0]||'',name:r[1]||'',type:r[2]||'완제품',prices:r[3]?JSON.parse(r[3]):[],link:r[4]||'',note:r[5]||'',thumbUrl:r[6]||'',thumbId:''}))}
 function renderGoods(){
   const el=document.getElementById('goodsList');
-  if(state.goods.length===0){el.innerHTML='<div class="empty-state"><div class="icon">🛍️</div><p>등록된 굿즈가 없습니다</p></div>';return}
-  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>썸네일</th><th>굿즈명</th><th>구분</th><th>수량 / 1개당 가격 / 총금액</th><th>링크</th><th>비고</th><th>관리</th></tr></thead><tbody>${state.goods.map((g,i)=>`<tr>
+  let list=state.goods;
+  if(state.goodsFilter!=='all')list=list.filter(g=>g.type===state.goodsFilter);
+  if(list.length===0){el.innerHTML='<div class="empty-state"><div class="icon">🛍️</div><p>해당 굿즈가 없습니다</p></div>';return}
+  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>썸네일</th><th>굿즈명</th><th>구분</th><th>수량 / 1개당 가격 / 총금액</th><th>링크</th><th>비고</th><th>관리</th></tr></thead><tbody>${list.map((g,i)=>`<tr>
     <td>${g.thumbUrl?`<img src="${g.thumbUrl}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="previewGoodsImage('${g.thumbUrl}','${esc(g.name)}')" onerror="this.style.display='none'">`:'-'}</td>
     <td style="font-weight:600">${esc(g.name)}</td>
-    <td><span class="badge ${g.type==='완제품'?'badge-done':'badge-progress'}">${esc(g.type)}</span></td>
+    <td><span class="badge ${g.type==='채택'?'badge-done':'badge-pending'}">${esc(g.type)}</span></td>
     <td style="font-size:.8rem">${g.prices.map(p=>{const cost=Number(p.qty)*Number(p.price);const revenue=Number(p.qty)*Number(p.sellPrice||0);const profit=revenue-cost;return`<div>${p.qty}개 × ₩${Number(p.price).toLocaleString()} = <strong>₩${cost.toLocaleString()}</strong>${p.sellPrice?` | 판매 ₩${Number(p.sellPrice).toLocaleString()} → <span style="color:${profit>=0?'var(--success)':'var(--danger)'}">수익 ₩${profit.toLocaleString()}</span>`:''}</div>`}).join('')}</td>
     <td>${g.link?`<a href="${g.link}" target="_blank" style="color:var(--accent);font-size:.8rem">링크 열기</a>`:'-'}</td>
     <td style="font-size:.8rem;max-width:150px;white-space:pre-wrap">${esc(g.note)||'-'}</td>
-    <td><button class="btn btn-secondary btn-sm" onclick="openGoodsModal(${i})">수정</button></td>
+    <td><button class="btn btn-secondary btn-sm" onclick="openGoodsModal(${state.goods.indexOf(g)})">수정</button></td>
   </tr>`).join('')}</tbody></table></div>`;
 }
+function filterGoods(f){state.goodsFilter=f;document.querySelectorAll('.goods-filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));renderGoods()}
 function openGoodsModal(editIdx){
   const isEdit=editIdx!==undefined;const g=isEdit?state.goods[editIdx]:null;
   document.getElementById('goodsEditId').value=isEdit?editIdx:'';
