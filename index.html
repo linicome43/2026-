@@ -857,18 +857,28 @@ async function saveMeeting(){
   const title=document.getElementById('meetingTitle').value.trim();
   const content=document.getElementById('meetingContent').innerHTML.trim();
   const attendees=Array.from(document.querySelectorAll('#meetingAttendees input:checked')).map(c=>c.value).join(', ');
-  if(!title){showToast('제목 입력');return}
-  if(editIdx!==''){
-    const i=+editIdx;const m=state.meetings[i];m.date=date;m.title=title;m.content=content;m.attendees=attendees;
-    // Find actual row in sheet (meetings sorted differently)
-    const allRows=await sheetsGet('meetings!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===m.id);
-    if(rowIdx>=0){await sheetsUpdate(`meetings!A${rowIdx+2}:G${rowIdx+2}`,[[m.id,date,title,content,m.author,m.createdAt,attendees]]);showToast('회의록 수정됨')}
-    renderMeetings();renderDashboard();closeModal('meetingModal');return;
+  if(!title){showToast('제목을 입력하세요');return}
+  if(!content||content==='<br>'){showToast('내용을 입력하세요');return}
+  // 저장 버튼 비활성화 (중복 저장 방지)
+  const saveBtn=document.querySelector('#meetingModal .btn-primary');
+  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='저장 중...'}
+  try{
+    if(editIdx!==''){
+      const i=+editIdx;const m=state.meetings[i];m.date=date;m.title=title;m.content=content;m.attendees=attendees;
+      const allRows=await sheetsGet('meetings!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===m.id);
+      if(rowIdx>=0){const ok=await sheetsUpdate(`meetings!A${rowIdx+2}:G${rowIdx+2}`,[[m.id,date,title,content,m.author,m.createdAt,attendees]]);
+        if(ok){showToast('회의록 수정됨');renderMeetings();renderDashboard();closeModal('meetingModal')}
+        else{showToast('❌ 저장 실패! 다시 시도해주세요')}
+      }else{showToast('❌ 저장 실패: 기존 데이터를 찾을 수 없습니다')}
+      return;
+    }
+    const id=Date.now().toString(),author=state.user.name,createdAt=new Date().toISOString();
+    const ok=await sheetsAppend('meetings!A:G',[[id,date,title,content,author,createdAt,attendees]]);
+    if(ok){state.meetings.unshift({id,date,title,content,author,createdAt,attendees});showToast('✅ 회의록 저장됨');renderMeetings();renderDashboard();closeModal('meetingModal')}
+    else{showToast('❌ 저장 실패! 내용을 유지합니다. 다시 시도해주세요')}
+  }finally{
+    if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='저장'}
   }
-  const id=Date.now().toString(),author=state.user.name,createdAt=new Date().toISOString();
-  const ok=await sheetsAppend('meetings!A:G',[[id,date,title,content,author,createdAt,attendees]]);
-  if(ok){state.meetings.unshift({id,date,title,content,author,createdAt,attendees});showToast('회의록 저장됨');renderMeetings();renderDashboard()}
-  closeModal('meetingModal');
 }
 async function deleteMeeting(i){if(!confirm('이 회의록을 삭제하시겠습니까?'))return;
   const m=state.meetings[i];const allRows=await sheetsGet('meetings!A2:A');const rowIdx=allRows.findIndex(r=>r[0]===m.id);
