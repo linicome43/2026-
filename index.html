@@ -547,6 +547,35 @@ async function deleteCategory(){
   closeModal('addCategoryModal');
 }
 async function addCategory(){await saveCategory()}
+
+// FILE CATEGORY MANAGEMENT
+function openFileCategoryModal(){
+  renderFileCategoryList();
+  openModal('fileCategoryModal');
+}
+function renderFileCategoryList(){
+  document.getElementById('fileCategoryList').innerHTML=state.categories.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><input type="text" class="form-control" value="${esc(c)}" style="flex:1" onchange="renameFileCategory(${i},this.value)"><button class="btn btn-danger btn-sm" onclick="removeFileCategory(${i})">삭제</button></div>`).join('')||'<p style="color:var(--text-secondary);font-size:.85rem">카테고리 없음</p>';
+}
+async function addFileCategory(){
+  const name=document.getElementById('newFileCategoryName').value.trim();
+  if(!name){showToast('이름 입력');return}
+  if(state.categories.includes(name)){showToast('이미 존재');return}
+  const ok=await sheetsAppend('categories!A:A',[[name]]);
+  if(ok){state.categories.push(name);document.getElementById('newFileCategoryName').value='';renderCategoryFilters();renderFileCategoryList();showToast(`'${name}' 추가됨`)}
+}
+async function renameFileCategory(i,newName){
+  if(!newName.trim())return;
+  const oldName=state.categories[i];state.categories[i]=newName.trim();
+  await sheetsUpdate(`categories!A${i+2}:A${i+2}`,[[newName.trim()]]);
+  // 기존 파일 카테고리도 업데이트
+  state.files.forEach((f,fi)=>{if(f.category===oldName){f.category=newName.trim();sheetsUpdate(`files!G${fi+2}:G${fi+2}`,[[newName.trim()]])}});
+  renderCategoryFilters();showToast('이름 변경됨');
+}
+async function removeFileCategory(i){
+  if(!confirm(`'${state.categories[i]}' 카테고리를 삭제하시겠습니까?`))return;
+  const ok=await sheetsDelete('categories',i+1);
+  if(ok){state.categories.splice(i,1);renderCategoryFilters();renderFileCategoryList();renderFiles();showToast('삭제됨')}
+}
 function filterByCategory(c){state.categoryFilter=c;renderCategoryFilters();renderProjects()}
 function filterFiles(c){state.fileCategoryFilter=c;renderCategoryFilters();renderFiles()}
 function filterBudget(c){state.budgetCategoryFilter=c;renderCategoryFilters();renderBudget()}
