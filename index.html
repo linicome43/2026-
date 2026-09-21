@@ -372,6 +372,16 @@ tr:hover td{background:var(--bg)}
   </div>
 </div></div>
 
+<div class="modal-overlay" id="fileCategoryModal"><div class="modal">
+  <h3 class="modal-title">파일 카테고리 관리</h3>
+  <div id="fileCategoryList" style="max-height:300px;overflow-y:auto;margin-bottom:12px"></div>
+  <div style="display:flex;gap:8px">
+    <input type="text" class="form-control" id="newFileCategoryName" placeholder="새 카테고리 이름">
+    <button class="btn btn-primary" onclick="addFileCategory()">추가</button>
+  </div>
+  <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('fileCategoryModal')">닫기</button></div>
+</div></div>
+
 <div class="modal-overlay" id="boothModal"><div class="modal">
   <h3 class="modal-title" id="boothModalTitle">부스 추가</h3>
   <input type="hidden" id="boothEditId"><input type="hidden" id="boothGroup">
