@@ -217,8 +217,9 @@ tr:hover td{background:var(--bg)}
     <div class="page" id="page-files">
       <h2 class="page-title">파일 업로드</h2>
       <div class="card">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
           <select class="form-control" id="fileCategory" style="width:auto;"><option value="">카테고리 선택</option></select>
+          <button class="btn btn-secondary btn-sm" onclick="openFileCategoryModal()">⚙️ 카테고리 관리</button>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <input type="text" class="form-control" id="fileDescription" placeholder="파일 설명 (예: 포스터 1차 시안)" style="flex:1;min-width:200px">
